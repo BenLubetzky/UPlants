@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">UPlants</string>
+    <string name="app_tagline">Share and discover plants</string>
+
+    <!-- Login -->
+    <string name="login_title">Welcome back</string>
+    <string name="login_button">Log in</string>
+    <string name="login_no_account">Don\'t have an account? Sign up</string>
+    <string name="continue_as_guest">Continue as guest</string>
+
+    <!-- Sign up -->
+    <string name="signup_title">Create your account</string>
+    <string name="signup_button">Sign up</string>
+    <string name="signup_have_account">Already have an account? Log in</string>
+
+    <!-- Fields -->
+    <string name="field_username">Username</string>
+    <string name="field_email">Email</string>
+    <string name="field_password">Password</string>
+    <string name="field_confirm_password">Confirm password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+
+    <!-- Validation -->
+    <string name="error_username_invalid">3–30 characters: letters, numbers, _ or .</string>
+    <string name="error_email_invalid">Enter a valid email address</string>
+    <string name="error_password_short">At least 8 characters</string>
+    <string name="error_passwords_mismatch">Passwords don\'t match</string>
+
+    <!-- Server / network errors -->
+    <string name="error_invalid_credentials">Wrong username or password</string>
+    <string name="error_account_exists">That username or email is already taken</string>
+    <string name="error_network">Can\'t reach the server. Check your connection.</string>
+    <string name="error_server">Something went wrong. Please try again later.</string>
+
+    <!-- Home placeholder -->
+    <string name="home_welcome">Hi, %1$s!</string>
+    <string name="home_guest">You\'re browsing as a guest</string>
+    <string name="home_placeholder">The rest of the app goes here.</string>
+    <string name="logout">Log out</string>
+    <string name="sign_in_or_up">Log in or sign up</string>
+</resources>
