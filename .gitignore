@@ -1,0 +1,4 @@
+# Secrets (copy .env.example instead)
+.env
+.env.*
+!.env.example
