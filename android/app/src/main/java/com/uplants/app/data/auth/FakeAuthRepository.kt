@@ -13,11 +13,11 @@ import java.util.UUID
  */
 class FakeAuthRepository(private val store: SessionStore) : AuthRepository {
 
-    private data class Account(val id: Long, val email: String, val password: String)
+    private data class Account(val id: String, val email: String, val password: String)
 
     private val mutex = Mutex()
     private val accounts = mutableMapOf(
-        "demo" to Account(id = 1, email = "demo@uplants.app", password = "password123"),
+        "demo" to Account(id = "1", email = "demo@uplants.app", password = "password123"),
     )
 
     override val session: Flow<Session?> = store.session
@@ -39,14 +39,14 @@ class FakeAuthRepository(private val store: SessionStore) : AuthRepository {
         val account = mutex.withLock {
             val taken = name in accounts || accounts.values.any { it.email.equals(mail, ignoreCase = true) }
             if (taken) return Result.failure(AuthError.AccountExists())
-            Account(id = accounts.size + 1L, email = mail, password = password).also { accounts[name] = it }
+            Account(id = (accounts.size + 1).toString(), email = mail, password = password).also { accounts[name] = it }
         }
         return Result.success(startSession(account.id, name))
     }
 
     override suspend fun logout() = store.clear()
 
-    private suspend fun startSession(userId: Long, username: String): Session =
+    private suspend fun startSession(userId: String, username: String): Session =
         Session(token = "fake-${UUID.randomUUID()}", userId = userId, username = username)
             .also { store.save(it) }
 

@@ -2,7 +2,6 @@ package com.uplants.app.data.auth
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +14,7 @@ class SessionStore(private val context: Context) {
 
     val session: Flow<Session?> = context.sessionDataStore.data.map { prefs ->
         val token = prefs[TOKEN] ?: return@map null
-        Session(token = token, userId = prefs[USER_ID] ?: 0L, username = prefs[USERNAME].orEmpty())
+        Session(token = token, userId = prefs[USER_ID].orEmpty(), username = prefs[USERNAME].orEmpty())
     }
 
     suspend fun save(session: Session) {
@@ -32,7 +31,7 @@ class SessionStore(private val context: Context) {
 
     private companion object {
         val TOKEN = stringPreferencesKey("token")
-        val USER_ID = longPreferencesKey("user_id")
+        val USER_ID = stringPreferencesKey("user_id")
         val USERNAME = stringPreferencesKey("username")
     }
 }

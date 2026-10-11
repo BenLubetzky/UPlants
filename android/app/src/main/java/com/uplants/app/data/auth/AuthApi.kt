@@ -31,4 +31,4 @@ data class AuthResponse(
 )
 
 @Serializable
-data class UserDto(val id: Long, val username: String)
+data class UserDto(val id: String, val username: String)

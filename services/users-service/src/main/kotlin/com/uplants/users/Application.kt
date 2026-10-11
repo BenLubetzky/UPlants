@@ -1,0 +1,21 @@
+package com.uplants.users
+
+import com.uplants.users.plugins.configureCORS
+import com.uplants.users.plugins.configureRouting
+import com.uplants.users.plugins.configureSerialization
+import com.uplants.users.service.SupabaseAuthService
+import io.ktor.server.application.Application
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+
+fun main() {
+    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
+    embeddedServer(Netty, port = port, host = "0.0.0.0", module = Application::module)
+        .start(wait = true)
+}
+
+fun Application.module() {
+    configureSerialization()
+    configureCORS()
+    configureRouting(SupabaseAuthService())
+}

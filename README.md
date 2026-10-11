@@ -18,12 +18,13 @@ and only the services hold the Supabase keys.
 |---|---|
 | [`android/`](android/README.md) | Kotlin + Jetpack Compose app (MVVM) |
 | [`database/`](database/README.md) | Supabase schema and the migrations applied to it |
-| `services/` | Microservices *(coming next)* |
+| `services/users-service/` | Users & Auth microservice (Kotlin / Ktor) |
 | `docs/` | Assignment brief and, later, the project report |
 
 ## Getting started
 
 1. Copy `.env.example` to `.env` and fill in the Supabase values ([where to find them](database/README.md#keys-who-gets-what)).
    `.env` is git-ignored, so never commit it.
-2. **Android:** open the `android/` folder in Android Studio. It runs against a fake backend by default
+2. **Backend microservices:** Run `docker-compose up --build` from the root directory to start `users-service` on `http://localhost:8080`.
+3. **Android:** open the `android/` folder in Android Studio. It runs against a fake backend by default
    (see [`android/README.md`](android/README.md)).

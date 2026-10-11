@@ -5,7 +5,7 @@ import com.uplants.app.R
 import kotlinx.coroutines.flow.Flow
 
 /** A logged-in user. The token is sent to the backend on authenticated requests. */
-data class Session(val token: String, val userId: Long, val username: String)
+data class Session(val token: String, val userId: String, val username: String)
 
 interface AuthRepository {
     /** Emits the current session, or null when signed out. Survives app restarts. */
