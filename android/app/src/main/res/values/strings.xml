@@ -31,6 +31,7 @@
     <!-- Server / network errors -->
     <string name="error_invalid_credentials">Wrong username or password</string>
     <string name="error_account_exists">That username or email is already taken</string>
+    <string name="error_email_not_confirmed">Account created. Confirm your email, then log in.</string>
     <string name="error_network">Can\'t reach the server. Check your connection.</string>
     <string name="error_server">Something went wrong. Please try again later.</string>
 

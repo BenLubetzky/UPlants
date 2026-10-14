@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive-icon foreground: a white leaf inside the 66dp safe zone of the 108dp canvas. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M74,34C52,34 36,46 36,64c0,4 1,7 2,10c3,-11 11,-20 23,-25c-10,7 -17,16 -20,28c3,2 7,3 11,3c19,0 22,-17 22,-46z" />
+</vector>

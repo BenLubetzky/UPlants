@@ -25,6 +25,8 @@ class NetworkAuthRepository(
     private suspend fun authenticate(call: suspend () -> AuthResponse): Result<Session> =
         try {
             val response = call()
+            // Supabase returns no token on sign-up while "Confirm email" is on (see database/README.md).
+            if (response.accessToken.isBlank()) return Result.failure(AuthError.EmailNotConfirmed())
             val session = Session(response.accessToken, response.user.id, response.user.username)
             store.save(session)
             Result.success(session)

@@ -22,6 +22,7 @@ interface AuthRepository {
 sealed class AuthError(@StringRes val messageRes: Int) : Exception() {
     class InvalidCredentials : AuthError(R.string.error_invalid_credentials)
     class AccountExists : AuthError(R.string.error_account_exists)
+    class EmailNotConfirmed : AuthError(R.string.error_email_not_confirmed)
     class Network : AuthError(R.string.error_network)
     class Server : AuthError(R.string.error_server)
 }

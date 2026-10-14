@@ -2,3 +2,12 @@
 .env
 .env.*
 !.env.example
+
+# IDE and build output (each Gradle project also has its own .gitignore)
+.idea/
+*.iml
+.gradle/
+.kotlin/
+build/
+local.properties
+.DS_Store

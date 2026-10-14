@@ -1,20 +1,19 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
 
 android {
     namespace = "com.uplants.app"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.uplants.app"
         minSdk = 26
-        targetSdk = 35
+        // Not 37 yet: targeting Android 17 blocks local-network traffic (the emulator -> your PC's
+        // backend at 10.0.2.2) unless the app requests ACCESS_LOCAL_NETWORK at runtime.
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
 
@@ -39,10 +38,6 @@ android {
         compose = true
         buildConfig = true
     }
-}
-
-kotlin {
-    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
 
 dependencies {
