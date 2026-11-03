@@ -19,7 +19,7 @@ and only the services hold the Supabase keys.
 | [`android/`](android/README.md) | Kotlin + Jetpack Compose app (MVVM) |
 | [`database/`](database/README.md) | Supabase schema and the migrations applied to it |
 | `services/users-service/` | Users & Auth microservice (Kotlin / Ktor) |
-| `docs/` | Assignment brief and, later, the project report |
+| `docs/` | Assignment brief, [requirements checklist](docs/REQUIREMENTS.md) and, later, the project report |
 
 ## Getting started
 

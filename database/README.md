@@ -93,6 +93,7 @@ Supabase dashboard → **SQL Editor** → paste each file, in order → **Run**:
 | `004_row_level_security.sql` | Turns RLS on with no policies, so the public API exposes nothing and only the services can read/write |
 | `005_storage_buckets.sql` | Public buckets `avatars` (5 MB, images) and `post-media` (50 MB, image/video/audio) |
 | `006_seed_categories.sql` | Starting plant categories |
+| `007_service_role_grants.sql` | Gives the secret key (`service_role`) read/write access to our tables; the publishable key stays locked out |
 
 Every file is safe to run again. If one fails, fix the cause and re-run that file.
 
