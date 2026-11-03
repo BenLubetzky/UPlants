@@ -68,7 +68,7 @@ Counters on `posts` (likes, comments, views, shares, ratings) are updated by tri
 
 ## Proposed ownership by service
 
-> **Not done yet:** the microservices haven't been built. This is the planned split and may change as they are created.
+> **Built so far:** `users-service` and `content-service`. The others are still planned.
 
 Each microservice owns its tables and is the only one that writes to them:
 
