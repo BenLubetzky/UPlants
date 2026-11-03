@@ -30,3 +30,18 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+
+  interactions-service:
+    build:
+      context: ./services/interactions-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
+    env_file:
+      - .env
+    restart: unless-stopped

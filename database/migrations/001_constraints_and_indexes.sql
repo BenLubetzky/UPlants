@@ -154,8 +154,12 @@ drop trigger if exists set_updated_at on public.profiles;
 create trigger set_updated_at before update on public.profiles
   for each row execute function public.set_updated_at();
 
+-- Only content edits count, not counter updates from likes/views/comments.
 drop trigger if exists set_updated_at on public.posts;
-create trigger set_updated_at before update on public.posts
+create trigger set_updated_at
+  before update of category_id, content_type, title, description, plant_species, tags,
+                   media_url, thumbnail_url, location_name
+  on public.posts
   for each row execute function public.set_updated_at();
 
 drop trigger if exists set_updated_at on public.ratings;
