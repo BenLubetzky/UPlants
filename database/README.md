@@ -63,12 +63,12 @@ Counters on `posts` (likes, comments, views, shares, ratings) are updated by tri
 | Sort by date, rating, interactions | `created_at`, `rating_avg`, `interaction_count` (indexed) |
 | History + statistics dashboard | `posts` by author; `post_views.viewed_at` (views over time); `ratings` grouped by `stars` (histogram) |
 | Social tools (follow, like, message) | `follows`, `reactions`, `messages` |
-| Notifications | `notifications` (`new_post`, `comment`, `like`, `rating`, `follow`, `message`, `share`) + `device_tokens` for push |
+| Notifications | `notifications` (`new_post`, `comment`, `like`, `rating`, `follow`, `message`, `share`), created by triggers (008) + `device_tokens` for push |
 | Offline content *(optional)* | Not in the database: cached in the app |
 
 ## Proposed ownership by service
 
-> **Built so far:** `users-service` and `content-service`. The others are still planned.
+> **Built so far:** `users-service`, `content-service` and `interactions-service`. The others are still planned.
 
 Each microservice owns its tables and is the only one that writes to them:
 
@@ -94,6 +94,7 @@ Supabase dashboard → **SQL Editor** → paste each file, in order → **Run**:
 | `005_storage_buckets.sql` | Public buckets `avatars` (5 MB, images) and `post-media` (50 MB, image/video/audio) |
 | `006_seed_categories.sql` | Starting plant categories |
 | `007_service_role_grants.sql` | Gives the secret key (`service_role`) read/write access to our tables; the publishable key stays locked out |
+| `008_dedupe_triggers_and_notifications.sql` | Drops older duplicate counter triggers (counts were doubled), keeps the notification triggers in the repo, recounts everything |
 
 Every file is safe to run again. If one fails, fix the cause and re-run that file.
 

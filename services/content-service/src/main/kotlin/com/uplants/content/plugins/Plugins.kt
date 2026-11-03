@@ -21,6 +21,7 @@ fun Application.configureSerialization() {
     install(ContentNegotiation) {
         json(Json {
             prettyPrint = true
+            encodeDefaults = true // always send every field, even 0 / null / []
             ignoreUnknownKeys = true
         })
     }
