@@ -1,9 +1,13 @@
 package com.uplants.users
 
 import com.uplants.users.plugins.configureCORS
+import com.uplants.users.plugins.configureErrors
 import com.uplants.users.plugins.configureRouting
 import com.uplants.users.plugins.configureSerialization
+import com.uplants.users.service.AuthVerifier
+import com.uplants.users.service.ProfilesService
 import com.uplants.users.service.SupabaseAuthService
+import com.uplants.users.service.SupabaseClient
 import io.ktor.server.application.Application
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -15,7 +19,9 @@ fun main() {
 }
 
 fun Application.module() {
+    val supabase = SupabaseClient()
     configureSerialization()
     configureCORS()
-    configureRouting(SupabaseAuthService())
+    configureErrors()
+    configureRouting(SupabaseAuthService(supabase), ProfilesService(supabase), AuthVerifier(supabase))
 }

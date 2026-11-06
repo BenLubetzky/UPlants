@@ -2,227 +2,164 @@ package com.uplants.users.service
 
 import com.uplants.users.models.AuthResponse
 import com.uplants.users.models.LoginRequest
-import com.uplants.users.models.ProfileDto
 import com.uplants.users.models.RegisterRequest
 import com.uplants.users.models.SupabaseAuthSuccessResponse
+import com.uplants.users.models.SupabaseRefreshRequest
 import com.uplants.users.models.SupabaseRpcEmailRequest
 import com.uplants.users.models.SupabaseSignUpRequest
 import com.uplants.users.models.SupabaseTokenRequest
 import com.uplants.users.models.UserDto
-import io.ktor.client.HttpClient
+import com.uplants.users.models.UsernameRow
 import io.ktor.client.call.body
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.headers
 import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 
-sealed class AuthResult<out T> {
-    data class Success<T>(val data: T) : AuthResult<T>()
-    data class Error(val status: HttpStatusCode, val message: String) : AuthResult<Nothing>()
-}
+/** Sign-up, log-in and token refresh through Supabase Auth. */
+class SupabaseAuthService(private val supabase: SupabaseClient) {
 
-class SupabaseAuthService(
-    private val rawSupabaseUrl: String = System.getenv("SUPABASE_URL") ?: "http://localhost:54321",
-    private val publishableKey: String = System.getenv("SUPABASE_PUBLISHABLE_KEY") ?: "",
-    private val secretKey: String = System.getenv("SUPABASE_SECRET_KEY") ?: ""
-) {
-    private val supabaseUrl: String = rawSupabaseUrl
-        .trim()
-        .trimEnd('/')
-        .removeSuffix("/rest/v1")
-        .removeSuffix("/auth/v1")
-        .trimEnd('/')
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val log = LoggerFactory.getLogger(SupabaseAuthService::class.java)
 
-    private val client = HttpClient(CIO) {
-        install(ContentNegotiation) {
-            json(this@SupabaseAuthService.json)
-        }
-    }
+    private val invalidCredentials = ServiceResult.Fail(HttpStatusCode.Unauthorized, "Invalid credentials")
 
     /**
      * Registers a new user.
      * 1. Checks if the username is already taken.
-     * 2. Calls Supabase Auth sign-up.
+     * 2. Calls Supabase Auth sign-up; a trigger creates the `profiles` row.
      */
-    suspend fun register(request: RegisterRequest): AuthResult<AuthResponse> {
+    suspend fun register(request: RegisterRequest): ServiceResult<AuthResponse> = with(supabase) {
         val cleanUsername = request.username.trim()
         val cleanEmail = request.email.trim()
 
         if (cleanUsername.isBlank() || cleanEmail.isBlank() || request.password.isBlank()) {
-            return AuthResult.Error(HttpStatusCode.BadRequest, "All fields are required")
+            return ServiceResult.Fail(HttpStatusCode.BadRequest, "All fields are required")
         }
 
-        // 1. Check if username is already in use
         if (isUsernameTaken(cleanUsername)) {
-            return AuthResult.Error(HttpStatusCode.Conflict, "Username is already taken")
+            return ServiceResult.Fail(HttpStatusCode.Conflict, "Username is already taken")
         }
 
-        // 2. Call Supabase Auth /auth/v1/signup
-        val signUpUrl = "$supabaseUrl/auth/v1/signup"
-        try {
-            val response = client.post(signUpUrl) {
-                contentType(ContentType.Application.Json)
-                headers {
-                    append("apikey", publishableKey)
-                }
-                setBody(
-                    SupabaseSignUpRequest(
-                        email = cleanEmail,
-                        password = request.password,
-                        data = mapOf(
-                            "username" to cleanUsername,
-                            "display_name" to cleanUsername
-                        )
-                    )
-                )
-            }
-
-            if (!response.status.isSuccess()) {
-                val errorText = response.bodyAsText()
-                if (response.status == HttpStatusCode.BadRequest || response.status == HttpStatusCode.UnprocessableEntity || errorText.contains("already registered", ignoreCase = true)) {
-                    return AuthResult.Error(HttpStatusCode.Conflict, "Account with this email or username already exists")
-                }
-                return AuthResult.Error(response.status, "Registration failed: $errorText")
-            }
-
-            val bodyText = response.bodyAsText()
-            val supabaseAuth = json.decodeFromString<SupabaseAuthSuccessResponse>(bodyText)
-
-            val accessToken = supabaseAuth.accessToken ?: ""
-            val userId = supabaseAuth.user?.id ?: ""
-
-            if (userId.isEmpty()) {
-                return AuthResult.Error(HttpStatusCode.InternalServerError, "Failed to retrieve user registration info")
-            }
-
-            return AuthResult.Success(
-                AuthResponse(
-                    accessToken = accessToken,
-                    user = UserDto(id = userId, username = cleanUsername)
+        val response = http.post("$authUrl/signup") {
+            header("apikey", publishableKey)
+            contentType(ContentType.Application.Json)
+            setBody(
+                SupabaseSignUpRequest(
+                    email = cleanEmail,
+                    password = request.password,
+                    data = mapOf("username" to cleanUsername, "display_name" to cleanUsername)
                 )
             )
-        } catch (e: Exception) {
-            return AuthResult.Error(HttpStatusCode.InternalServerError, e.message ?: "Server connection error")
         }
+
+        if (!response.status.isSuccess()) {
+            val errorText = response.bodyAsText()
+            if (response.status == HttpStatusCode.BadRequest || response.status == HttpStatusCode.UnprocessableEntity ||
+                errorText.contains("already registered", ignoreCase = true)
+            ) {
+                return ServiceResult.Fail(HttpStatusCode.Conflict, "Account with this email or username already exists")
+            }
+            log.error("Sign-up failed {}: {}", response.status, errorText)
+            return ServiceResult.Fail(HttpStatusCode.BadGateway, "Registration failed")
+        }
+
+        val auth = response.body<SupabaseAuthSuccessResponse>()
+        val userId = auth.user?.id
+            ?: return ServiceResult.Fail(HttpStatusCode.InternalServerError, "Failed to retrieve user registration info")
+
+        ServiceResult.Ok(
+            AuthResponse(
+                accessToken = auth.accessToken.orEmpty(),
+                refreshToken = auth.refreshToken,
+                user = UserDto(id = userId, username = cleanUsername)
+            ),
+            HttpStatusCode.Created
+        )
     }
 
     /**
-     * Logs in a user by username.
-     * 1. Resolves username -> email via RPC `email_for_username` or direct email check.
-     * 2. Calls Supabase Auth password token endpoint.
+     * Logs in by username (or email).
+     * 1. Resolves username -> email with the `email_for_username` function.
+     * 2. Calls the Supabase Auth password grant.
      */
-    suspend fun login(request: LoginRequest): AuthResult<AuthResponse> {
+    suspend fun login(request: LoginRequest): ServiceResult<AuthResponse> = with(supabase) {
         val cleanUsername = request.username.trim()
         if (cleanUsername.isBlank() || request.password.isBlank()) {
-            return AuthResult.Error(HttpStatusCode.BadRequest, "Username and password are required")
+            return ServiceResult.Fail(HttpStatusCode.BadRequest, "Username and password are required")
         }
 
-        // 1. Resolve email for username
-        var email = getEmailForUsername(cleanUsername)
-        if (email == null && cleanUsername.contains("@")) {
-            email = cleanUsername // fallback if user typed email as username
+        val email = getEmailForUsername(cleanUsername)
+            ?: cleanUsername.takeIf { it.contains("@") } // fallback if user typed their email
+            ?: return invalidCredentials
+
+        val response = http.post("$authUrl/token") {
+            parameter("grant_type", "password")
+            header("apikey", publishableKey)
+            contentType(ContentType.Application.Json)
+            setBody(SupabaseTokenRequest(email = email, password = request.password))
         }
+        if (!response.status.isSuccess()) return invalidCredentials
+        authResponse(response.body())
+    }
 
-        if (email.isNullOrBlank()) {
-            return AuthResult.Error(HttpStatusCode.Unauthorized, "Invalid credentials")
+    /** Swaps a refresh token for a new access token (and a new refresh token). */
+    suspend fun refresh(refreshToken: String): ServiceResult<AuthResponse> = with(supabase) {
+        if (refreshToken.isBlank()) return ServiceResult.Fail(HttpStatusCode.BadRequest, "refresh_token is required")
+        val response = http.post("$authUrl/token") {
+            parameter("grant_type", "refresh_token")
+            header("apikey", publishableKey)
+            contentType(ContentType.Application.Json)
+            setBody(SupabaseRefreshRequest(refreshToken))
         }
+        if (!response.status.isSuccess()) return ServiceResult.Fail(HttpStatusCode.Unauthorized, "Session expired, log in again")
+        authResponse(response.body())
+    }
 
-        // 2. Authenticate with Supabase Auth /auth/v1/token?grant_type=password
-        val tokenUrl = "$supabaseUrl/auth/v1/token?grant_type=password"
-        try {
-            val response = client.post(tokenUrl) {
-                contentType(ContentType.Application.Json)
-                headers {
-                    append("apikey", publishableKey)
-                }
-                setBody(
-                    SupabaseTokenRequest(
-                        email = email,
-                        password = request.password
-                    )
-                )
-            }
-
-            if (!response.status.isSuccess()) {
-                return AuthResult.Error(HttpStatusCode.Unauthorized, "Invalid credentials")
-            }
-
-            val bodyText = response.bodyAsText()
-            val supabaseAuth = json.decodeFromString<SupabaseAuthSuccessResponse>(bodyText)
-
-            val accessToken = supabaseAuth.accessToken ?: ""
-            val userId = supabaseAuth.user?.id ?: ""
-
-            return AuthResult.Success(
-                AuthResponse(
-                    accessToken = accessToken,
-                    user = UserDto(id = userId, username = cleanUsername)
-                )
+    /** Builds the answer with the username stored in the profile (the user may have typed it in another case, or their email). */
+    private suspend fun authResponse(auth: SupabaseAuthSuccessResponse): ServiceResult<AuthResponse> {
+        val userId = auth.user?.id ?: return invalidCredentials
+        val username = usernameOf(userId) ?: return USER_NOT_FOUND
+        return ServiceResult.Ok(
+            AuthResponse(
+                accessToken = auth.accessToken.orEmpty(),
+                refreshToken = auth.refreshToken,
+                user = UserDto(id = userId, username = username)
             )
-        } catch (e: Exception) {
-            return AuthResult.Error(HttpStatusCode.InternalServerError, e.message ?: "Authentication server error")
-        }
+        )
     }
 
-    /**
-     * Queries public.profiles to check if username exists.
-     */
-    private suspend fun isUsernameTaken(username: String): Boolean {
-        return try {
-            val profileUrl = "$supabaseUrl/rest/v1/profiles?username=ilike.${username}"
-            val response = client.get(profileUrl) {
-                headers {
-                    append("apikey", if (secretKey.isNotBlank()) secretKey else publishableKey)
-                    if (secretKey.isNotBlank()) {
-                        append(HttpHeaders.Authorization, "Bearer $secretKey")
-                    }
-                }
-            }
-            if (response.status.isSuccess()) {
-                val bodyText = response.bodyAsText()
-                val profiles = json.decodeFromString<List<ProfileDto>>(bodyText)
-                profiles.isNotEmpty()
-            } else false
-        } catch (e: Exception) {
-            false
+    private suspend fun usernameOf(userId: String): String? = with(supabase) {
+        val response = http.get("$restUrl/profiles") {
+            asService()
+            parameter("select", "username")
+            parameter("id", "eq.$userId")
         }
+        if (!response.status.isSuccess()) error("Supabase ${response.status}: ${response.bodyAsText()}")
+        response.body<List<UsernameRow>>().firstOrNull()?.username
     }
 
-    /**
-     * Calls Supabase RPC function `email_for_username` using the secret key.
-     */
-    private suspend fun getEmailForUsername(username: String): String? {
-        return try {
-            val rpcUrl = "$supabaseUrl/rest/v1/rpc/email_for_username"
-            val key = if (secretKey.isNotBlank()) secretKey else publishableKey
-            val response = client.post(rpcUrl) {
-                contentType(ContentType.Application.Json)
-                headers {
-                    append("apikey", key)
-                    append(HttpHeaders.Authorization, "Bearer $key")
-                }
-                setBody(SupabaseRpcEmailRequest(p_username = username))
-            }
-            if (response.status.isSuccess()) {
-                val text = response.bodyAsText().trim().removeSurrounding("\"")
-                if (text.isNotBlank() && text != "null") text else null
-            } else null
-        } catch (e: Exception) {
-            null
+    /** Case-insensitive; `_` in a username is matched literally, not as a wildcard. */
+    private suspend fun isUsernameTaken(username: String): Boolean = with(supabase) {
+        val taken = count("profiles", "username" to "ilike.${escapeLike(username)}")
+            ?: error("Couldn't check the username")
+        taken > 0
+    }
+
+    private suspend fun getEmailForUsername(username: String): String? = with(supabase) {
+        val response = http.post("$restUrl/rpc/email_for_username") {
+            asService()
+            contentType(ContentType.Application.Json)
+            setBody(SupabaseRpcEmailRequest(p_username = username))
         }
+        if (!response.status.isSuccess()) return null
+        val text = response.bodyAsText().trim().removeSurrounding("\"")
+        text.takeIf { it.isNotBlank() && it != "null" }
     }
 }
