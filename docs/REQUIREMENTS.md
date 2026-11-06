@@ -6,7 +6,7 @@ Update this file (and the summary table in the [README](../README.md#status)) wh
 **Status:** ✅ done · 🟡 partial (e.g. server ready, app screen missing) · ❌ not started
 **Deadline:** 15 December 2026 (report + GitHub link + demo video)
 
-Last updated: 2026-11-06 (messaging-service)
+Last updated: 2026-11-06 (all services for 1–21 ready; app screens next)
 
 ## Application requirements
 
@@ -67,7 +67,5 @@ Last updated: 2026-11-06 (messaging-service)
 
 - The Supabase access token expires after about 1 hour. `users-service` has `POST /refresh`, but the app doesn't call it yet.
 - `categories` has near-duplicates (e.g. "Pests & diseases" / "Pests & Diseases").
-- Two identical compose files: root `docker-compose.yml` and `services/docker-compose.yml`.
-- `android/README.md` says target SDK 37; `app/build.gradle.kts` uses 36.
 - `content-service` full-text search (`q=`) covers title, description and species, not tags (use `tag=`).
 - Test account `uplants_tester` exists in Supabase (used to test publishing).
