@@ -74,6 +74,100 @@ Design decisions:
 Tech stack: Kotlin 2 + Ktor 3 (services), Kotlin + Jetpack Compose + Retrofit + DataStore (app),
 Supabase (Postgres, Auth, Storage), Docker Compose, Gradle 9.8 / JDK 21.
 
+### 2.1 What the services are
+
+A **service** (microservice) is a small, separate server program that does **one job** and offers it over HTTP.
+UPlants has five, one per functionality:
+
+| Service | Its one job | Example call |
+|---|---|---|
+| users-service | Accounts and people: log-in, profiles, search, follows, interests | `GET /api/users/search?q=ana` |
+| content-service | Posts: browse, search, personalised feed, publish, delete | `GET /api/content/feed` |
+| interactions-service | What users do on a post: comments, likes, stars, views, stats | `PUT /api/interactions/posts/{id}/reaction` |
+| favorites-service | Favourite lists with custom names | `PUT /api/favorites/lists/{id}/posts/{postId}` |
+| messaging-service | Private messages and sharing posts | `POST /api/messages` |
+
+Each one is its own Kotlin project, runs in its own Docker container on its own port, has its own tables, its own REST API
+and its own tests. They don't call each other: each answers the app directly, using the shared database underneath.
+
+### 2.2 How the app talks to the services
+
+The app never touches the database. For every action it sends an HTTP request (REST, JSON) to the service in charge of
+that feature, and shows the answer. Inside the app, this follows MVVM:
+
+```
+Screen (Compose)  →  ViewModel  →  Repository  →  Retrofit API  →  HTTP  →  service
+     shows UiState      holds state     gets the data     builds the
+                        and logic       (cache planned)   request
+```
+
+Example: **a registered user likes a post**.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant App as Android app
+    participant IS as interactions-service
+    participant Auth as Supabase Auth
+    participant DB as Postgres
+
+    User->>App: taps ♥
+    App->>IS: PUT /api/interactions/posts/{id}/reaction<br/>Authorization: Bearer <token><br/>{"value": 1}
+    IS->>Auth: is this token valid? who is it?
+    Auth-->>IS: user id
+    IS->>IS: validate (value must be 1 or -1)
+    IS->>DB: save the reaction (one per user per post)
+    Note over DB: triggers: like_count + 1,<br/>notification to the post's author
+    IS-->>App: 204 No Content
+    App-->>User: ♥ highlighted
+```
+
+The next time anyone loads that post (from content-service), it already shows the new like count:
+the services share the data through the database, not by calling each other.
+
+What every request has in common:
+
+- **Who you are**: after log-in the app keeps the access token (DataStore) and sends it as `Authorization: Bearer …`.
+  Visitors send nothing and can still browse and search posts, view profiles, comments and public lists.
+- **Where it goes**: each service has its own address (`http://<server>:8080` … `:8084`; from the emulator the server is `10.0.2.2`).
+- **What comes back**: JSON on success; on failure always `{"error": "message"}` with a status code the app can act on
+  (`401` → ask to log in again, `503` → "this feature is unavailable right now", etc.).
+
+### 2.3 Why this design
+
+1. **The brief asks for it.** Each functionality must be an independent service with its own data model and REST API,
+   running in Docker and integrated with Docker Compose, designed for graceful degradation.
+2. **A phone can't be trusted with secrets.** Anything inside an APK can be extracted. If the app talked to the database directly,
+   the database keys would be in the app and anyone could read or change everything. With services in between, the keys stay on
+   the server and every request is checked (who is calling, is the input valid, is this their post/list/message).
+3. **A phone has a slow, unreliable network and limited battery.** The services do the heavy work (ranking the feed, grouping the
+   inbox, computing stats, uploading to storage) and send back exactly what one screen needs, in one request.
+4. **A mobile app should keep working when part of the system fails.** Splitting by feature means a failure stays inside that feature.
+
+### 2.4 Benefits
+
+| Benefit | What it means in UPlants |
+|---|---|
+| **Security** | Database keys only on the server; Row Level Security blocks the public API; every write checks the user's token and ownership |
+| **Fault isolation / graceful degradation** | If messaging-service is down, the feed, posts and profiles still work; only "Messages" shows *unavailable*. If the database is unreachable, services answer `503` with a clear message instead of crashing |
+| **Independence** | Each service can be changed, rebuilt, restarted or redeployed without touching the others (`docker compose up --build favorites-service`) |
+| **Clear ownership** | Each table has exactly one service that writes it, so it's always clear where a rule lives (e.g. "one rating per user per post" is in interactions-service) |
+| **Simpler pieces** | Each service is small (one job, 600–1,000 lines of Kotlin) and has the same layout, so it's easy to read, test and explain |
+| **Testability** | Each service has its own unit tests and can be tested on its own with `curl`, without the app |
+| **Scalability** | A busy service (e.g. content-service serving the feed) can run in more containers without scaling the rest |
+| **A thin app** | The app holds no business rules; it shows data and sends actions. The same services could serve a web or iOS client unchanged |
+| **Parallel work** | Services and app screens can be built separately once the API contract is written (each service's README) |
+
+### 2.5 Costs, and how they're handled
+
+| Cost | How UPlants handles it |
+|---|---|
+| More moving parts (5 servers instead of 1) | Docker Compose starts all of them with one command; all services share the same structure |
+| The app must know several addresses | One base URL per service in the app's configuration; a single entry point (API gateway) could be added later |
+| Some code repeats between services (token check, error format) | Kept deliberately small and identical; each service stays independent instead of depending on a shared library |
+| Data that spans features (e.g. the feed needs follows from users-service) | Services may *read* other tables but only the owner *writes* them; counters are kept by database triggers, so they stay consistent |
+| Every request needs a network round-trip | Most screens get what they need in one call; the optional offline cache (requirement 22) is planned for the app |
+
 ---
 
 ## 3. How UPlants answers the brief
