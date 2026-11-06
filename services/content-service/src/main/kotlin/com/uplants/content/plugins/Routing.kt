@@ -7,6 +7,7 @@ import com.uplants.content.service.AuthVerifier
 import com.uplants.content.service.Checked
 import com.uplants.content.service.ContentService
 import com.uplants.content.service.MAX_MEDIA_BYTES
+import com.uplants.content.service.parsePage
 import com.uplants.content.service.ServiceResult
 import com.uplants.content.service.parsePostQuery
 import com.uplants.content.service.validateNewPost
@@ -41,6 +42,15 @@ fun Application.configureRouting(content: ContentService, auth: AuthVerifier) {
                 when (val query = parsePostQuery { call.request.queryParameters[it] }) {
                     is Checked.Invalid -> call.respondError(HttpStatusCode.BadRequest, query.message)
                     is Checked.Valid -> call.respondResult(content.listPosts(query.value))
+                }
+            }
+
+            // Personalised feed for logged-in users (visitors: GET /posts?sort=...)
+            get("/feed") {
+                val userId = call.requireUser(auth) ?: return@get
+                when (val page = parsePage(call.request.queryParameters["limit"], call.request.queryParameters["offset"])) {
+                    is Checked.Invalid -> call.respondError(HttpStatusCode.BadRequest, page.message)
+                    is Checked.Valid -> call.respondResult(content.feed(userId, page.value.first, page.value.second))
                 }
             }
 

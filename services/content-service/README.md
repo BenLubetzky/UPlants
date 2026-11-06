@@ -11,6 +11,7 @@ Runs on **port 8081**. From the Android emulator: `http://10.0.2.2:8081/`.
 |---|---|---|---|
 | `GET` | `/api/content/categories` | no | All categories |
 | `GET` | `/api/content/posts` | no | Feed: search, filter, sort, paginate (below) |
+| `GET` | `/api/content/feed` | yes | Personalised feed (below) |
 | `GET` | `/api/content/posts/{id}` | no | One post |
 | `POST` | `/api/content/posts` | yes | Publish a post (multipart, below) |
 | `DELETE` | `/api/content/posts/{id}` | yes | Delete your own post and its file |
@@ -70,6 +71,26 @@ Response:
 
 `GET /posts/{id}` returns a single post object in the same shape.
 The counters are updated automatically when likes, comments, views or ratings happen (other services).
+
+### `GET /api/content/feed`
+
+The logged-in user's personalised feed. Query: `limit` (1–50, default 20), `offset`.
+
+Posts by people you follow and in your interest categories (both set in `users-service`), mixed with popular posts,
+ranked by a score (`service/Feed.kt`):
+
+| Signal | Points |
+|---|---|
+| You follow the author | +3 |
+| Category is one of your interests | +2 |
+| Rating | +0.4 per star (max +2) |
+| Interactions | +0.5 × ln(1 + interactions) |
+| Age | −0.1 per day (max −3, so after 30 days age stops mattering) |
+
+Your own posts are left out. The 200 newest matching posts plus the 50 most popular are ranked, and pages go through that list.
+
+Answer: same as `GET /posts`, plus `"personalized"`. It is `false` when you don't follow anyone and have no
+interests yet: then you get the best-rated posts instead.
 
 ### `POST /api/content/posts`
 

@@ -6,7 +6,7 @@ Update this file (and the summary table in the [README](../README.md#status)) wh
 **Status:** ✅ done · 🟡 partial (e.g. server ready, app screen missing) · ❌ not started
 **Deadline:** 15 December 2026 (report + GitHub link + demo video)
 
-Last updated: 2026-11-06 (users-service: profiles, search, follows, interests)
+Last updated: 2026-11-06 (personalised feed)
 
 ## Application requirements
 
@@ -20,7 +20,7 @@ Last updated: 2026-11-06 (users-service: profiles, search, follows, interests)
 | 6 | Contents are categorised (e.g. content type) | 🟡 | `posts.content_type`, `categories` (seeded, 006) | [`content-service`](../services/content-service/README.md) ✅ `GET /categories`, `content_type` on every post | — |
 | 7 | Visitors see contents ranked by rating, views, interactions | 🟡 | `rating_avg`, `view_count`, `interaction_count` (triggers, 003) | [`content-service`](../services/content-service/README.md) ✅ `sort=rating` / `views` / `interactions` | — |
 | 8 | Contents can be organised by content type | 🟡 | `posts.content_type` | [`content-service`](../services/content-service/README.md) ✅ `type=` photo, video, audio, text | — |
-| 9 | Registered users get a feed based on interests, categories, ratings | ❌ | `user_interests`, `follows` | [`users-service`](../services/users-service/README.md) ✅ interests, follows · `content-service` feed (planned) | — |
+| 9 | Registered users get a feed based on interests, categories, ratings | 🟡 | `user_interests`, `follows` | [`users-service`](../services/users-service/README.md) ✅ interests, follows · [`content-service`](../services/content-service/README.md) ✅ `GET /feed` (follows + interests + rating + interactions + freshness) | — |
 | 10 | Registered users can publish contents | 🟡 | `posts`, Storage bucket `post-media` (005) | [`content-service`](../services/content-service/README.md) ✅ `POST /posts` (multipart, file to Storage) | — |
 | 11 | Registered users can comment | 🟡 | `comments` | [`interactions-service`](../services/interactions-service/README.md) ✅ list / add / delete comments | — |
 | 12 | Registered users can rate (0–5 stars, likes/dislikes) | 🟡 | `ratings`, `reactions` | [`interactions-service`](../services/interactions-service/README.md) ✅ `PUT /reaction` (like/dislike), `PUT /rating` (0–5) | — |

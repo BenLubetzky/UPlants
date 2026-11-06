@@ -2,6 +2,9 @@ package com.uplants.content.service
 
 import com.uplants.content.models.CategoryDto
 import com.uplants.content.models.CreatePostRequest
+import com.uplants.content.models.FeedPage
+import com.uplants.content.models.FollowingRow
+import com.uplants.content.models.InterestCategoryRow
 import com.uplants.content.models.MediaUpload
 import com.uplants.content.models.PostDto
 import com.uplants.content.models.PostInsert
@@ -21,7 +24,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
 sealed interface ServiceResult<out T> {
@@ -70,6 +76,75 @@ class ContentService(private val supabase: SupabaseClient) {
         }
         if (!response.status.isSuccess()) return upstreamError(response)
         ServiceResult.Ok(PostPage(response.body(), query.limit, query.offset))
+    }
+
+    /**
+     * Personalised feed: posts by people [userId] follows and in their interest categories, mixed with popular
+     * posts and ranked by [feedScore]. A user with no follows and no interests gets the most-rated posts.
+     * The user's own posts are left out.
+     */
+    suspend fun feed(userId: String, limit: Int, offset: Int): ServiceResult<FeedPage> = with(supabase) {
+        val signals = feedSignals(userId)
+        val candidateFilter = feedCandidateFilter(signals)
+        if (candidateFilter == null) {
+            val response = http.get("$restUrl/posts") {
+                asService()
+                parameter("select", POST_SELECT)
+                parameter("author_id", "neq.$userId")
+                parameter("order", Sort.RATING.column)
+                parameter("limit", limit)
+                parameter("offset", offset)
+            }
+            if (!response.status.isSuccess()) return upstreamError(response)
+            return ServiceResult.Ok(FeedPage(response.body(), limit, offset, personalized = false))
+        }
+
+        coroutineScope {
+            val matching = async { feedPosts(userId, "created_at.desc", FEED_CANDIDATES, candidateFilter) }
+            val popular = async { feedPosts(userId, Sort.INTERACTIONS.column, FEED_POPULAR, orFilter = null) }
+            val ranked = rankFeed(matching.await() + popular.await(), signals, Instant.now())
+            ServiceResult.Ok(FeedPage(ranked.drop(offset).take(limit), limit, offset, personalized = true))
+        }
+    }
+
+    private suspend fun feedPosts(userId: String, order: String, limit: Int, orFilter: String?): List<PostDto> = with(supabase) {
+        val response = http.get("$restUrl/posts") {
+            asService()
+            parameter("select", POST_SELECT)
+            parameter("author_id", "neq.$userId")
+            orFilter?.let { parameter("or", it) }
+            parameter("order", order)
+            parameter("limit", limit)
+        }
+        if (!response.status.isSuccess()) error("Supabase ${response.status}: ${response.bodyAsText()}")
+        response.body()
+    }
+
+    /** Reads (never writes) `follows` and `user_interests`, which belong to users-service. */
+    private suspend fun feedSignals(userId: String): FeedSignals = with(supabase) {
+        coroutineScope {
+            val follows = async {
+                val response = http.get("$restUrl/follows") {
+                    asService()
+                    parameter("select", "following_id")
+                    parameter("follower_id", "eq.$userId")
+                    parameter("order", "created_at.desc")
+                    parameter("limit", FEED_MAX_FOLLOWS)
+                }
+                if (!response.status.isSuccess()) error("Supabase ${response.status}: ${response.bodyAsText()}")
+                response.body<List<FollowingRow>>().map { it.followingId }.toSet()
+            }
+            val interests = async {
+                val response = http.get("$restUrl/user_interests") {
+                    asService()
+                    parameter("select", "category_id")
+                    parameter("user_id", "eq.$userId")
+                }
+                if (!response.status.isSuccess()) error("Supabase ${response.status}: ${response.bodyAsText()}")
+                response.body<List<InterestCategoryRow>>().map { it.categoryId }.toSet()
+            }
+            FeedSignals(follows.await(), interests.await())
+        }
     }
 
     suspend fun getPost(id: String): ServiceResult<PostDto> = with(supabase) {

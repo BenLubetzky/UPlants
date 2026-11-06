@@ -23,6 +23,7 @@ class ApplicationTest {
     fun `publishing without a token is refused`() = testApplication {
         application { module() }
         assertEquals(HttpStatusCode.Unauthorized, client.post("/api/content/posts").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/content/feed").status)
     }
 
     @Test

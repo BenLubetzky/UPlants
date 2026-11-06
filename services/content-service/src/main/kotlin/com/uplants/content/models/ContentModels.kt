@@ -59,6 +59,15 @@ data class PostPage(
     val offset: Int,
 )
 
+/** `GET /api/content/feed`: like [PostPage], plus whether it was personalised (false = popular posts for a new user). */
+@Serializable
+data class FeedPage(
+    val posts: List<PostDto>,
+    val limit: Int,
+    val offset: Int,
+    val personalized: Boolean,
+)
+
 @Serializable
 data class ErrorResponse(val error: String)
 
@@ -122,3 +131,11 @@ data class PostgrestError(
 
 @Serializable
 data class SupabaseUser(val id: String)
+
+// --- Read-only rows from users-service tables (feed signals) ---
+
+@Serializable
+data class FollowingRow(@SerialName("following_id") val followingId: String)
+
+@Serializable
+data class InterestCategoryRow(@SerialName("category_id") val categoryId: Int)
