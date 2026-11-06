@@ -68,7 +68,7 @@ Counters on `posts` (likes, comments, views, shares, ratings) are updated by tri
 
 ## Proposed ownership by service
 
-> **Built so far:** `users-service`, `content-service`, `interactions-service` and `favorites-service`. The others are still planned.
+> **Built so far:** `users-service`, `content-service`, `interactions-service`, `favorites-service` and `messaging-service`. `notifications-service` is still planned.
 
 Each microservice owns its tables and is the only one that writes to them:
 
