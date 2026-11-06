@@ -101,4 +101,4 @@ From the repo root, with `.env` filled in:
 docker compose up --build interactions-service
 ```
 
-Tests: `gradle test` (or, without Gradle installed: `docker run --rm -v "$PWD":/app -w /app gradle:8.11.1-jdk21 gradle test`).
+Tests: `./gradlew test` (no Gradle or JDK install needed: the wrapper downloads Gradle 9.8.2 and JDK 21).

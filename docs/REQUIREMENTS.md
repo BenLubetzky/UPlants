@@ -1,7 +1,7 @@
 # UPlants – requirements checklist
 
 Every requirement from the [assignment](Practical_assignment.pdf), whether it's met, and where.
-Update this file whenever a feature lands.
+Update this file (and the summary table in the [README](../README.md#status)) whenever a feature lands.
 
 **Status:** ✅ done · 🟡 partial (e.g. server ready, app screen missing) · ❌ not started
 **Deadline:** 15 December 2026 (report + GitHub link + demo video)
