@@ -8,6 +8,10 @@ plugins {
 group = "com.uplants.content"
 version = "0.0.1"
 
+kotlin {
+    jvmToolchain(21)
+}
+
 application {
     mainClass.set("com.uplants.content.ApplicationKt")
 }
