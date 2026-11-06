@@ -13,7 +13,8 @@ built for CC3049 – Mobile Device Programming. The assignment is in [`docs/`](d
 | Optional (22–25) | 0 | 0 | 4 |
 | Infrastructure (I1–I7) | 0 | 7 | 0 |
 
-Most 🟡 items have the backend ready but no app screen yet.
+Every app requirement has its backend ready (services + database); what's missing is the Android screens.
+The optional ones (22–25) are app-side only.
 Deadline: **15 December 2026** (report + GitHub link + demo video).
 
 ## Architecture

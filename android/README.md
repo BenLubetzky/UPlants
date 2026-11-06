@@ -2,7 +2,7 @@
 
 Kotlin + Jetpack Compose, MVVM. Currently: login, sign up, and "continue as guest".
 
-Toolchain: Android Studio 2026.2+, AGP 9.4, Gradle 9.8 (via `gradlew`), Kotlin 2.4, compile/target SDK 37, min SDK 26.
+Toolchain: Android Studio 2026.2+, AGP 9.4, Gradle 9.8 (via `gradlew`), Kotlin 2.4, compile SDK 37, target SDK 36 (37 would block emulator → PC traffic, see `app/build.gradle.kts`), min SDK 26.
 
 ## Run it
 
