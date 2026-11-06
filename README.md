@@ -9,7 +9,7 @@ built for CC3049 – Mobile Device Programming. The assignment is in [`docs/`](d
 
 | Area | ✅ Done | 🟡 Partial | ❌ Not started |
 |---|---|---|---|
-| App requirements (1–21) | 0 | 16 | 5 |
+| App requirements (1–21) | 0 | 18 | 3 |
 | Optional (22–25) | 0 | 0 | 4 |
 | Infrastructure (I1–I7) | 0 | 7 | 0 |
 
@@ -31,7 +31,7 @@ and only the services hold the Supabase keys.
 |---|---|
 | [`android/`](android/README.md) | Kotlin + Jetpack Compose app (MVVM) |
 | [`database/`](database/README.md) | Supabase schema and the migrations applied to it |
-| `services/users-service/` | Users & Auth microservice (Kotlin / Ktor) |
+| [`services/users-service/`](services/users-service/README.md) | Accounts, profiles, user search, follows, interests (Kotlin / Ktor, port 8080) |
 | [`services/content-service/`](services/content-service/README.md) | Posts & categories microservice: feed, search, publish (Kotlin / Ktor, port 8081) |
 | [`services/interactions-service/`](services/interactions-service/README.md) | Comments, likes, ratings, views, post stats (Kotlin / Ktor, port 8082) |
 | `docs/` | Assignment brief, [requirements checklist](docs/REQUIREMENTS.md) and, later, the project report |

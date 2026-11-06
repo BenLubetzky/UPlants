@@ -19,8 +19,15 @@ data class RegisterRequest(
 )
 
 @Serializable
+data class RefreshRequest(
+    @SerialName("refresh_token") val refreshToken: String
+)
+
+@Serializable
 data class AuthResponse(
     @SerialName("access_token") val accessToken: String,
+    /** Send it to `POST /api/users/refresh` to get a new access token (they expire after about 1 hour). */
+    @SerialName("refresh_token") val refreshToken: String? = null,
     val user: UserDto
 )
 
@@ -51,8 +58,14 @@ data class SupabaseTokenRequest(
 )
 
 @Serializable
+data class SupabaseRefreshRequest(
+    @SerialName("refresh_token") val refreshToken: String
+)
+
+@Serializable
 data class SupabaseAuthSuccessResponse(
     @SerialName("access_token") val accessToken: String? = null,
+    @SerialName("refresh_token") val refreshToken: String? = null,
     val user: SupabaseUserDto? = null
 )
 
@@ -60,8 +73,11 @@ data class SupabaseAuthSuccessResponse(
 data class SupabaseUserDto(
     val id: String,
     val email: String? = null,
-    @SerialName("user_metadata") val userMetadata: Map<String, String>? = null
 )
+
+/** Answer of `GET /auth/v1/user`, used to check access tokens. */
+@Serializable
+data class SupabaseUser(val id: String)
 
 @Serializable
 data class SupabaseRpcEmailRequest(
@@ -69,8 +85,7 @@ data class SupabaseRpcEmailRequest(
 )
 
 @Serializable
-data class ProfileDto(
-    val id: String,
-    val username: String,
-    @SerialName("display_name") val displayName: String? = null
-)
+data class UsernameRow(val username: String)
+
+@Serializable
+data class PostgrestError(val code: String? = null, val message: String? = null)
