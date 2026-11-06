@@ -3,6 +3,19 @@
 A mobile app for plant lovers to browse, publish and share plant content (photos, videos, audio and text),
 built for CC3049 – Mobile Device Programming. The assignment is in [`docs/`](docs/Practical_assignment.pdf).
 
+## Status
+
+**📋 Full checklist: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)**: every requirement, its status and where it's implemented.
+
+| Area | ✅ Done | 🟡 Partial | ❌ Not started |
+|---|---|---|---|
+| App requirements (1–21) | 0 | 16 | 5 |
+| Optional (22–25) | 0 | 0 | 4 |
+| Infrastructure (I1–I7) | 0 | 7 | 0 |
+
+Most 🟡 items have the backend ready but no app screen yet.
+Deadline: **15 December 2026** (report + GitHub link + demo video).
+
 ## Architecture
 
 ```
