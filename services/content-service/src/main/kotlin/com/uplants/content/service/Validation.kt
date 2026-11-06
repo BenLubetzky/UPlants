@@ -61,10 +61,19 @@ fun parsePostQuery(param: (String) -> String?): Checked<PostQuery> {
     val sort = param("sort")?.let { Sort.of(it) ?: return Checked.Invalid("sort must be one of ${Sort.entries.map { s -> s.key }}") }
         ?: Sort.RECENT
 
-    val limit = param("limit")?.let { it.toIntOrNull()?.takeIf { n -> n in 1..50 } ?: return Checked.Invalid("limit must be 1-50") } ?: 20
-    val offset = param("offset")?.let { it.toIntOrNull()?.takeIf { n -> n >= 0 } ?: return Checked.Invalid("offset must be 0 or more") } ?: 0
+    val (limit, offset) = when (val page = parsePage(param("limit"), param("offset"))) {
+        is Checked.Invalid -> return page
+        is Checked.Valid -> page.value
+    }
 
     return Checked.Valid(PostQuery(search, type, category, author, tag, sort, limit, offset))
+}
+
+/** Reads `limit` / `offset` (limit 1-50, default 20). */
+fun parsePage(limitParam: String?, offsetParam: String?): Checked<Pair<Int, Int>> {
+    val limit = limitParam?.let { it.toIntOrNull()?.takeIf { n -> n in 1..50 } ?: return Checked.Invalid("limit must be 1-50") } ?: 20
+    val offset = offsetParam?.let { it.toIntOrNull()?.takeIf { n -> n >= 0 } ?: return Checked.Invalid("offset must be 0 or more") } ?: 0
+    return Checked.Valid(limit to offset)
 }
 
 /** Checks and cleans up a new post (trims text, lowercases tags). */
