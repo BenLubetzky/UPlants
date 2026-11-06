@@ -59,7 +59,7 @@ Last updated: 2026-11-06 (all services for 1–21 ready; app screens next)
 
 | Item | Status |
 |---|---|
-| Written report (module design, data model, APIs, interface) | ❌ |
+| Written report (module design, data model, APIs, interface) | 🟡 Draft in [REPORT.md](REPORT.md): app, architecture, modules, data model, APIs. App screens still to document |
 | Code on GitHub | 🟡 Repository exists, work in progress |
 | Demo video | ❌ |
 

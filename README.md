@@ -6,6 +6,7 @@ built for CC3049 – Mobile Device Programming. The assignment is in [`docs/`](d
 ## Status
 
 **📋 Full checklist: [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)**: every requirement, its status and where it's implemented.
+**📄 Project report: [`docs/REPORT.md`](docs/REPORT.md)**: what UPlants is, how it's built, and how each part answers the brief.
 
 | Area | ✅ Done | 🟡 Partial | ❌ Not started |
 |---|---|---|---|
@@ -37,7 +38,7 @@ and only the services hold the Supabase keys.
 | [`services/interactions-service/`](services/interactions-service/README.md) | Comments, likes, ratings, views, post stats (Kotlin / Ktor, port 8082) |
 | [`services/favorites-service/`](services/favorites-service/README.md) | Favourite lists with custom names (Kotlin / Ktor, port 8083) |
 | [`services/messaging-service/`](services/messaging-service/README.md) | Private messages and sharing posts with other users (Kotlin / Ktor, port 8084) |
-| `docs/` | Assignment brief, [requirements checklist](docs/REQUIREMENTS.md) and, later, the project report |
+| `docs/` | Assignment brief, [requirements checklist](docs/REQUIREMENTS.md) and [project report](docs/REPORT.md) |
 
 ## Getting started
 
