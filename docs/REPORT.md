@@ -28,26 +28,11 @@ camera, microphone, GPS and sensors are part of each post (where it was taken, l
 
 ## 2. Architecture
 
-```mermaid
-flowchart LR
-    App["Android app<br/>Kotlin · Jetpack Compose · MVVM"]
-    subgraph Docker["Docker Compose"]
-        U["users-service<br/>:8080"]
-        C["content-service<br/>:8081"]
-        I["interactions-service<br/>:8082"]
-        F["favorites-service<br/>:8083"]
-        M["messaging-service<br/>:8084"]
-    end
-    subgraph Supabase
-        DB[("Postgres")]
-        Auth["Auth"]
-        St["Storage<br/>(media files)"]
-    end
-    App -- REST/JSON --> U & C & I & F & M
-    U --> Auth
-    U & C & I & F & M --> DB
-    C --> St
-```
+![Where each part runs and how a request flows](img/deployment-flow.svg)
+
+The app (left) only talks to the five services (middle), which run in Docker on the developer's PC;
+only the services talk to Supabase (right), in the cloud. The numbers follow one request: liking a post.
+Where each part runs is detailed in [§2.6](#26-where-it-runs).
 
 Design decisions:
 
@@ -170,7 +155,7 @@ What every request has in common:
 
 ### 2.6 Where it runs
 
-![Where each part runs and how a request flows](img/deployment-flow.svg)
+See the diagram at the start of this section.
 
 | Part | Where it runs | Talks to |
 |---|---|---|
