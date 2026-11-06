@@ -20,12 +20,11 @@ Deadline: **15 December 2026** (report + GitHub link + demo video).
 
 ## Architecture
 
-```
-Android app  ──REST──▶  microservices (Docker)  ──▶  Supabase (Postgres, Auth, Storage)
-```
+![Where each part runs and how a request flows](docs/img/deployment-flow.svg)
 
 The app never talks to Supabase directly. Each feature is an independent service with its own REST API,
 and only the services hold the Supabase keys.
+The services run in Docker on the developer's PC; Supabase is in the cloud. More in the [report](docs/REPORT.md#26-where-it-runs).
 
 ## Repository layout
 

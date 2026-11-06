@@ -168,6 +168,23 @@ What every request has in common:
 | Data that spans features (e.g. the feed needs follows from users-service) | Services may *read* other tables but only the owner *writes* them; counters are kept by database triggers, so they stay consistent |
 | Every request needs a network round-trip | Most screens get what they need in one call; the optional offline cache (requirement 22) is planned for the app |
 
+### 2.6 Where it runs
+
+![Where each part runs and how a request flows](img/deployment-flow.svg)
+
+| Part | Where it runs | Talks to |
+|---|---|---|
+| Android app | The phone, or the Android Studio emulator | The services, over the local network (HTTP + JSON) |
+| The 5 services | The developer's PC, one Docker container each (`docker compose up --build`), ports 8080–8084 | Supabase, over the internet (HTTPS), with the keys from `.env` |
+| Supabase (Postgres, Auth, Storage) | Supabase's cloud (`*.supabase.co`) | Only the services |
+
+How the app finds the services: the emulator reaches the PC at `10.0.2.2` (so `http://10.0.2.2:8080` … `:8084`);
+a real phone uses the PC's IP on the same Wi-Fi. This is set in `android/gradle.properties` (`uplants.apiBaseUrl`).
+
+So the app works while the PC is on and Docker is running. The brief asks for services in Docker containers integrated with
+Docker Compose, not for public hosting. The same containers could later run on a cloud server (a VM, Google Cloud Run,
+Fly.io, Render…) without code changes: only the address configured in the app would change.
+
 ---
 
 ## 3. How UPlants answers the brief
