@@ -127,6 +127,53 @@
     <string name="share_send">Send</string>
     <string name="share_sent">Shared with @%1$s</string>
 
+    <!-- Publish -->
+    <string name="nav_publish">Publish</string>
+    <string name="publish_title">New post</string>
+    <string name="publish_guest">Log in to share your plants: take a photo, record a video or audio, or write a tip.</string>
+    <string name="publish_what">What are you sharing?</string>
+    <string name="publish_media_hint">Record a %1$s now, or choose one from your phone.</string>
+    <string name="publish_take_photo">Take photo</string>
+    <string name="publish_record_video">Record video</string>
+    <string name="publish_record_audio">Record audio</string>
+    <string name="publish_choose_file">Choose file</string>
+    <string name="publish_live_explained">Live recordings also save your location and the phone\'s sensor readings.</string>
+    <string name="publish_recording">Recording… %1$s</string>
+    <string name="publish_stop">Stop</string>
+    <string name="publish_remove_media">Remove file</string>
+    <string name="publish_source_live">● Recorded live in the app</string>
+    <string name="publish_source_upload">Chosen from your phone</string>
+    <string name="publish_location">Location</string>
+    <string name="publish_location_off">Not added</string>
+    <string name="publish_locating">Getting your location…</string>
+    <string name="publish_location_failed">Couldn\'t get your location. Turn on location and retry.</string>
+    <string name="publish_location_when_recorded">Added when you record</string>
+    <string name="publish_reading_sensors">Reading sensors…</string>
+    <string name="publish_no_sensors">No sensors available</string>
+    <string name="publish_field_title">Title *</string>
+    <string name="publish_field_category">Category *</string>
+    <string name="publish_field_description">Description</string>
+    <string name="publish_field_species">Plant species</string>
+    <string name="publish_field_tags">Tags</string>
+    <string name="publish_tags_hint">fern, indoor, watering</string>
+    <string name="publish_tags_help">Up to 10, separated by commas or spaces</string>
+    <string name="publish_button">Publish</string>
+    <string name="publish_uploading">Publishing…</string>
+    <string name="publish_error_fix_fields">Please fix the highlighted fields.</string>
+    <string name="publish_error_title_required">Give your post a title</string>
+    <string name="publish_error_title_long">Title is too long (max 120)</string>
+    <string name="publish_error_description_long">Description is too long (max 2000)</string>
+    <string name="publish_error_category">Choose a category</string>
+    <string name="publish_error_too_many_tags">At most 10 tags</string>
+    <string name="publish_error_tag_format">Tags can only use letters, numbers, _ and - (max 30 each)</string>
+    <string name="publish_error_media_required">Record or choose a file first</string>
+    <string name="publish_error_media_type">This file doesn\'t match the post type</string>
+    <string name="publish_error_file_too_big">The file is too big (max 50 MB)</string>
+    <string name="publish_error_location_needed">Live recordings need your location</string>
+    <string name="publish_error_microphone">Couldn\'t start the microphone</string>
+    <string name="publish_error_recording_short">The recording was too short. Try again.</string>
+    <string name="publish_error_read_file">Couldn\'t read that file</string>
+
     <!-- Counts -->
     <plurals name="post_views">
         <item quantity="one">%1$s view</item>

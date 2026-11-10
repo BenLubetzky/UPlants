@@ -9,6 +9,7 @@ import com.uplants.app.data.auth.SessionManager
 import com.uplants.app.data.auth.SessionStore
 import com.uplants.app.data.content.ContentApi
 import com.uplants.app.data.content.ContentRepository
+import com.uplants.app.data.device.DeviceServices
 import com.uplants.app.data.favorites.FavoritesApi
 import com.uplants.app.data.favorites.FavoritesRepository
 import com.uplants.app.data.interactions.InteractionsApi
@@ -83,10 +84,11 @@ class AppContainer(context: Context) {
     val authRepository: AuthRepository =
         if (BuildConfig.USE_FAKE_BACKEND) FakeAuthRepository(sessions) else NetworkAuthRepository(authApi, sessions)
 
-    val contentRepository by lazy { ContentRepository(service<ContentApi>(ServiceUrls.content)) }
+    val contentRepository by lazy { ContentRepository(service<ContentApi>(ServiceUrls.content), appContext.contentResolver) }
     val interactionsRepository by lazy { InteractionsRepository(service<InteractionsApi>(ServiceUrls.interactions)) }
     val favoritesRepository by lazy { FavoritesRepository(service<FavoritesApi>(ServiceUrls.favorites)) }
     val messagingRepository by lazy { MessagingRepository(service<MessagingApi>(ServiceUrls.messaging)) }
     val usersRepository by lazy { UsersRepository(service<UsersApi>(ServiceUrls.users)) }
 
+    val device by lazy { DeviceServices(appContext) }
 }

@@ -66,6 +66,8 @@ fun FeedScreen(
     onOpenPost: (String) -> Unit,
     deletedPostId: String?,
     onDeletedPostHandled: () -> Unit,
+    refreshRequested: Boolean,
+    onRefreshHandled: () -> Unit,
     viewedPostId: String?,
     onViewedPostHandled: () -> Unit,
     viewModel: FeedViewModel = viewModel(factory = FeedViewModel.factory(isLoggedIn)),
@@ -81,6 +83,12 @@ fun FeedScreen(
         if (viewedPostId != null) {
             viewModel.refreshPost(viewedPostId)
             onViewedPostHandled()
+        }
+    }
+    LaunchedEffect(refreshRequested) {
+        if (refreshRequested) {
+            viewModel.refresh()
+            onRefreshHandled()
         }
     }
     FeedContent(

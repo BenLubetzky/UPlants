@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -34,10 +36,14 @@ import com.uplants.app.ui.account.AccountScreen
 import com.uplants.app.ui.feed.FeedScreen
 import com.uplants.app.ui.navigation.AccountRoute
 import com.uplants.app.ui.navigation.DELETED_POST_ID_KEY
+import com.uplants.app.ui.navigation.FEED_NEEDS_REFRESH_KEY
 import com.uplants.app.ui.navigation.FeedRoute
 import com.uplants.app.ui.navigation.PostDetailRoute
+import com.uplants.app.ui.navigation.PublishRoute
 import com.uplants.app.ui.navigation.VIEWED_POST_ID_KEY
 import com.uplants.app.ui.post.PostDetailScreen
+import com.uplants.app.ui.publish.GuestPublishPrompt
+import com.uplants.app.ui.publish.PublishScreen
 import kotlin.reflect.KClass
 
 private data class TopLevelDestination(
@@ -50,6 +56,7 @@ private data class TopLevelDestination(
 
 private val topLevelDestinations = listOf(
     TopLevelDestination(FeedRoute, FeedRoute::class, R.string.nav_feed, Icons.Outlined.Home, Icons.Filled.Home),
+    TopLevelDestination(PublishRoute, PublishRoute::class, R.string.nav_publish, Icons.Outlined.AddCircleOutline, Icons.Filled.AddCircle),
     TopLevelDestination(AccountRoute, AccountRoute::class, R.string.nav_account, Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle),
 )
 
@@ -90,15 +97,31 @@ fun MainScreen(username: String?, onSignOut: () -> Unit) {
         NavHost(navController, startDestination = FeedRoute, modifier = Modifier.padding(padding)) {
             composable<FeedRoute> { entry ->
                 val deletedPostId by entry.savedStateHandle.getStateFlow<String?>(DELETED_POST_ID_KEY, null).collectAsState()
+                val needsRefresh by entry.savedStateHandle.getStateFlow(FEED_NEEDS_REFRESH_KEY, false).collectAsState()
                 val viewedPostId by entry.savedStateHandle.getStateFlow<String?>(VIEWED_POST_ID_KEY, null).collectAsState()
                 FeedScreen(
                     isLoggedIn = isLoggedIn,
                     onOpenPost = { navController.navigate(PostDetailRoute(it)) },
                     deletedPostId = deletedPostId,
                     onDeletedPostHandled = { entry.savedStateHandle[DELETED_POST_ID_KEY] = null },
+                    refreshRequested = needsRefresh,
+                    onRefreshHandled = { entry.savedStateHandle[FEED_NEEDS_REFRESH_KEY] = false },
                     viewedPostId = viewedPostId,
                     onViewedPostHandled = { entry.savedStateHandle[VIEWED_POST_ID_KEY] = null },
                 )
+            }
+            composable<PublishRoute> {
+                if (isLoggedIn) {
+                    PublishScreen(onPublished = { postId ->
+                        // Show the new post; Back goes to the (refreshed) feed, and the form starts empty next time.
+                        navController.getBackStackEntry<FeedRoute>().savedStateHandle[FEED_NEEDS_REFRESH_KEY] = true
+                        navController.navigate(PostDetailRoute(postId)) {
+                            popUpTo<FeedRoute>()
+                        }
+                    })
+                } else {
+                    GuestPublishPrompt(onLogin = onSignOut)
+                }
             }
             composable<PostDetailRoute> { entry ->
                 val postId = entry.toRoute<PostDetailRoute>().postId

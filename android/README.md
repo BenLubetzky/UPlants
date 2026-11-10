@@ -1,8 +1,9 @@
 # UPlants – Android app
 
 Kotlin + Jetpack Compose, MVVM.
-Built so far: login / sign up / continue as guest, the **feed** (For you + Explore with sorting and filters)
-and **post detail** (media, comments, like/dislike, 0–5 stars, save to a favourite list, share with a user).
+Built so far: login / sign up / continue as guest, the **feed** (For you + Explore with sorting and filters),
+**post detail** (media, comments, like/dislike, 0–5 stars, save to a favourite list, share with a user)
+and **publish** (photo / video / audio / text, picked from the phone or recorded live with GPS and sensor data).
 
 Toolchain: Android Studio 2026.2+, AGP 9.4, Gradle 9.8 (via `gradlew`), Kotlin 2.4, compile SDK 37, target SDK 36 (37 would block emulator → PC traffic, see `app/build.gradle.kts`), min SDK 26.
 
@@ -47,7 +48,8 @@ app/src/main/java/com/uplants/app/
 │   ├── interactions/ # interactions-service: comments, reactions, ratings, views
 │   ├── favorites/    # favorites-service: "save to list"
 │   ├── messaging/    # messaging-service: share a post
-│   └── users/        # users-service: user search
+│   ├── users/        # users-service: user search
+│   └── device/       # GPS (LocationReader), sensors (SensorReader), microphone (AudioRecorder), local files
 └── ui/
     ├── UPlantsApp.kt, AppViewModel.kt   # auth screens, or the main app once logged in / guest
     ├── main/         # MainScreen: bottom navigation + NavHost
@@ -55,6 +57,7 @@ app/src/main/java/com/uplants/app/
     ├── auth/         # login, sign up, validation
     ├── feed/         # FeedScreen + FeedViewModel
     ├── post/         # PostDetailScreen + ViewModel, "save to list" and "share" sheets
+    ├── publish/      # PublishScreen + ViewModel + validation
     ├── account/      # account tab (becomes the profile later)
     ├── common/       # PostCard, MediaPlayer, avatars, stars, loading/error states, UiText
     └── theme/
@@ -65,5 +68,15 @@ the `XScreen` composable collects it, and a stateless `XContent` composable draw
 
 Visitors can browse everything; actions that need an account (like, rate, comment, save, share) show a
 "Log in to continue" dialog.
+
+## Publishing and device hardware
+
+- **Upload**: photo/video from the system photo picker, audio from the file picker.
+- **Live**: photo/video through the system camera app (saved via a `FileProvider`), audio recorded in the app
+  (`MediaRecorder`, needs `RECORD_AUDIO`). Live posts need the GPS location (`ACCESS_FINE/COARSE_LOCATION`, asked before
+  recording) and attach a sensor snapshot: accelerometer, gyroscope, light and pressure when the phone has them.
+- Text and uploads can optionally add the location ("Add my location").
+- Files are streamed to content-service (`UriRequestBody`), never loaded whole into memory; max 50 MB.
+- On the emulator: the virtual camera works, and the location comes from the emulator's extended controls (⋯ → Location).
 
 Unit tests: `./gradlew test` (or right-click `app/src/test` → Run).

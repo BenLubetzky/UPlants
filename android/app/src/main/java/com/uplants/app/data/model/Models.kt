@@ -126,3 +126,20 @@ data class Message(
     @SerialName("created_at") val createdAt: String,
 )
 
+/** Metadata of a new post (`POST /api/content/posts`, multipart part `metadata`). */
+@Serializable
+data class NewPost(
+    @SerialName("category_id") val categoryId: Int,
+    @SerialName("content_type") val contentType: String,
+    /** "upload" (picked from the device) or "live" (recorded in the app; needs latitude/longitude). */
+    val source: String,
+    val title: String,
+    val description: String? = null,
+    @SerialName("plant_species") val plantSpecies: String? = null,
+    val tags: List<String> = emptyList(),
+    @SerialName("duration_seconds") val durationSeconds: Int? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    @SerialName("location_name") val locationName: String? = null,
+    @SerialName("sensor_data") val sensorData: JsonObject? = null,
+)

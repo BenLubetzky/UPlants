@@ -302,8 +302,12 @@ Full endpoint references are in each service's README; below is the design summa
   **post detail** (photo, or video/audio player; species, tags, location and sensor data; like/dislike, 0–5 stars,
   comments, view counting, save to a favourite list, share with another user, delete your own post).
   Visitors can browse everything; actions that need an account ask them to log in.
-- **Next**: publish with camera / microphone / GPS / sensors, profiles and search, favourite lists screen, messages,
-  dashboard, notifications, then the optional offline cache and connectivity handling.
+- **Publish**: photo, video, audio or text. A file can be picked from the phone ("upload") or recorded in the app ("live"):
+  the camera through the system camera app, audio with the microphone. Live recordings attach the GPS location
+  (with the place name) and a snapshot of the sensors (accelerometer, gyroscope, light, pressure), as the brief asks.
+  The form checks the same rules as content-service before uploading, and the file is streamed, not loaded into memory.
+- **Next**: profiles and search, favourite lists screen, messages, dashboard, notifications,
+  then the optional offline cache and connectivity handling.
   favourite lists, messages, dashboard, then the optional offline cache and connectivity handling.
 
 ---
