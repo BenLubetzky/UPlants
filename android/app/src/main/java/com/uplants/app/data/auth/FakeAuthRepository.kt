@@ -11,7 +11,7 @@ import java.util.UUID
  * real API exists. Accounts are lost when the app process dies.
  * Enabled with `uplants.useFakeBackend=true` in gradle.properties.
  */
-class FakeAuthRepository(private val store: SessionStore) : AuthRepository {
+class FakeAuthRepository(private val store: SessionManager) : AuthRepository {
 
     private data class Account(val id: String, val email: String, val password: String)
 
@@ -20,7 +20,7 @@ class FakeAuthRepository(private val store: SessionStore) : AuthRepository {
         "demo" to Account(id = "1", email = "demo@uplants.app", password = "password123"),
     )
 
-    override val session: Flow<Session?> = store.session
+    override val session: Flow<Session?> = store.stored
 
     override suspend fun login(username: String, password: String): Result<Session> {
         delay(FAKE_LATENCY_MS)
@@ -47,7 +47,7 @@ class FakeAuthRepository(private val store: SessionStore) : AuthRepository {
     override suspend fun logout() = store.clear()
 
     private suspend fun startSession(userId: String, username: String): Session =
-        Session(token = "fake-${UUID.randomUUID()}", userId = userId, username = username)
+        Session(token = "fake-${UUID.randomUUID()}", refreshToken = null, userId = userId, username = username)
             .also { store.save(it) }
 
     private companion object {

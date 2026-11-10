@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -14,7 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.uplants.app.ui.auth.login.LoginScreen
 import com.uplants.app.ui.auth.signup.SignUpScreen
-import com.uplants.app.ui.home.HomeScreen
+import com.uplants.app.ui.main.MainScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -32,8 +33,11 @@ fun UPlantsApp(viewModel: AppViewModel = viewModel(factory = AppViewModel.Factor
             CircularProgressIndicator()
         }
         AuthState.SignedOut -> AuthNavHost(onContinueAsGuest = viewModel::continueAsGuest)
-        AuthState.Guest -> HomeScreen(username = null, onSignOut = viewModel::signOut)
-        is AuthState.SignedIn -> HomeScreen(username = state.session.username, onSignOut = viewModel::signOut)
+        AuthState.Guest -> MainScreen(username = null, onSignOut = viewModel::signOut)
+        // key: a different account gets fresh screens (and ViewModels).
+        is AuthState.SignedIn -> key(state.session.userId) {
+            MainScreen(username = state.session.username, onSignOut = viewModel::signOut)
+        }
     }
 }
 

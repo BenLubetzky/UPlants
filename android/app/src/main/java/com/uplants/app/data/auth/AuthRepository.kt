@@ -4,8 +4,16 @@ import androidx.annotation.StringRes
 import com.uplants.app.R
 import kotlinx.coroutines.flow.Flow
 
-/** A logged-in user. The token is sent to the backend on authenticated requests. */
-data class Session(val token: String, val userId: String, val username: String)
+/**
+ * A logged-in user. [token] is sent to the services on authenticated requests; it expires after
+ * about an hour, and [refreshToken] is traded for a new one (see `network/TokenAuthenticator`).
+ */
+data class Session(
+    val token: String,
+    val refreshToken: String?,
+    val userId: String,
+    val username: String,
+)
 
 interface AuthRepository {
     /** Emits the current session, or null when signed out. Survives app restarts. */

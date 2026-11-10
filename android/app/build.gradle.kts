@@ -17,10 +17,10 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        // Set in gradle.properties (or override with -Puplants.apiBaseUrl=...).
-        val apiBaseUrl = providers.gradleProperty("uplants.apiBaseUrl").getOrElse("http://10.0.2.2:8080/")
+        // Set in gradle.properties (or override with -Puplants.apiHost=...).
+        val apiHost = providers.gradleProperty("uplants.apiHost").getOrElse("http://10.0.2.2")
         val useFakeBackend = providers.gradleProperty("uplants.useFakeBackend").getOrElse("true")
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("String", "API_HOST", "\"${apiHost.trimEnd('/')}\"")
         buildConfigField("boolean", "USE_FAKE_BACKEND", useFakeBackend)
     }
 
@@ -59,6 +59,10 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.okhttp.logging)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 
     testImplementation(libs.junit)
 }

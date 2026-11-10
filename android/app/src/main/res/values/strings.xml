@@ -38,7 +38,106 @@
     <!-- Home placeholder -->
     <string name="home_welcome">Hi, %1$s!</string>
     <string name="home_guest">You\'re browsing as a guest</string>
-    <string name="home_placeholder">The rest of the app goes here.</string>
     <string name="logout">Log out</string>
     <string name="sign_in_or_up">Log in or sign up</string>
+
+    <!-- Common -->
+    <string name="retry">Retry</string>
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="not_now">Not now</string>
+    <string name="more_options">More options</string>
+    <string name="deleted_user">Deleted user</string>
+    <string name="error_service_offline">Can\'t reach the server. Check your connection and that the services are running.</string>
+    <string name="error_login_again">Your session expired. Please log in again.</string>
+    <string name="error_forbidden">You\'re not allowed to do that.</string>
+    <string name="error_not_found">This was deleted or doesn\'t exist.</string>
+    <string name="error_unavailable">This part of UPlants is temporarily unavailable. Try again later.</string>
+    <string name="login_required_title">Log in to continue</string>
+    <string name="login_required_body">Visitors can browse and search. To like, rate, comment, save or share, log in or create an account.</string>
+
+    <!-- Navigation -->
+    <string name="nav_feed">Feed</string>
+    <string name="nav_account">Account</string>
+    <string name="account_more_soon">Your profile, posts and statistics will appear here.</string>
+    <string name="account_guest_hint">Log in to publish, comment, rate and get a feed based on your interests.</string>
+
+    <!-- Content types and sorting -->
+    <string name="type_photo">Photo</string>
+    <string name="type_video">Video</string>
+    <string name="type_audio">Audio</string>
+    <string name="type_text">Text</string>
+    <string name="live_recording">Live</string>
+    <string name="sort_recent">Newest</string>
+    <string name="sort_rating">Top rated</string>
+    <string name="sort_views">Most viewed</string>
+    <string name="sort_interactions">Most popular</string>
+    <string name="filter_all_types">All types</string>
+    <string name="filter_all_categories">All categories</string>
+
+    <!-- Feed -->
+    <string name="feed_for_you">For you</string>
+    <string name="feed_explore">Explore</string>
+    <string name="feed_empty">No posts here yet.</string>
+    <string name="feed_for_you_empty">Nothing new from other people yet. Try Explore, or follow people and pick interests.</string>
+    <string name="feed_end">You\'re all caught up</string>
+    <string name="feed_not_personalized">Follow people or pick your interests to personalise this feed. Showing popular posts for now.</string>
+
+    <!-- Post detail -->
+    <string name="post_title">Post</string>
+    <string name="post_species">Species: %1$s</string>
+    <string name="like">Like</string>
+    <string name="dislike">Dislike</string>
+    <string name="share">Share</string>
+    <string name="save_to_list">Save to list</string>
+    <string name="rate_n_stars">%1$d stars</string>
+    <string name="rating_none">No ratings yet</string>
+    <string name="rating_yours">Your rating</string>
+    <string name="rating_zero">You gave 0 stars.</string>
+    <string name="rating_give_zero">Give 0 stars</string>
+    <string name="rating_remove">Remove rating</string>
+    <string name="open_map">Map</string>
+    <string name="sensor_data">Sensor data</string>
+    <string name="delete_post_title">Delete post</string>
+    <string name="delete_post_body">This deletes the post, its file, comments and ratings. It can\'t be undone.</string>
+
+    <!-- Comments -->
+    <string name="comments_count">Comments (%1$d)</string>
+    <string name="comments_empty">No comments yet. Be the first!</string>
+    <string name="comments_load_more">Load more comments</string>
+    <string name="comments_login_to_comment">Log in to comment</string>
+    <string name="comment_hint">Add a comment…</string>
+    <string name="comment_send">Send comment</string>
+    <string name="comment_deleted">Comment deleted</string>
+    <string name="delete_comment">Delete comment</string>
+
+    <!-- Favourite lists -->
+    <string name="lists_empty">You don\'t have any lists yet. Create one below.</string>
+    <string name="list_new_hint">New list name</string>
+    <string name="list_create">Create</string>
+    <string name="list_public">Public list</string>
+    <string name="list_private">Private list</string>
+
+    <!-- Sharing -->
+    <string name="share_title">Share with…</string>
+    <string name="share_search_hint">Search people by name</string>
+    <string name="share_note_hint">Add a message (optional)</string>
+    <string name="share_no_results">No one found</string>
+    <string name="share_send">Send</string>
+    <string name="share_sent">Shared with @%1$s</string>
+
+    <!-- Counts -->
+    <plurals name="post_views">
+        <item quantity="one">%1$s view</item>
+        <item quantity="other">%1$s views</item>
+    </plurals>
+    <plurals name="post_shares">
+        <item quantity="one">%1$s share</item>
+        <item quantity="other">%1$s shares</item>
+    </plurals>
+    <plurals name="rating_summary">
+        <item quantity="one">Rated %1$s ★ by %2$d person</item>
+        <item quantity="other">Rated %1$s ★ by %2$d people</item>
+    </plurals>
 </resources>

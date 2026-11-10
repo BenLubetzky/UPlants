@@ -164,7 +164,7 @@ See the diagram at the start of this section.
 | Supabase (Postgres, Auth, Storage) | Supabase's cloud (`*.supabase.co`) | Only the services |
 
 How the app finds the services: the emulator reaches the PC at `10.0.2.2` (so `http://10.0.2.2:8080` … `:8084`);
-a real phone uses the PC's IP on the same Wi-Fi. This is set in `android/gradle.properties` (`uplants.apiBaseUrl`).
+a real phone uses the PC's IP on the same Wi-Fi. This is set in `android/gradle.properties` (`uplants.apiHost`); the app adds each service's port.
 
 So the app works while the PC is on and Docker is running. The brief asks for services in Docker containers integrated with
 Docker Compose, not for public hosting. The same containers could later run on a cloud server (a VM, Google Cloud Run,
@@ -293,9 +293,17 @@ Full endpoint references are in each service's README; below is the design summa
 - **Structure** (`android/app/src/main/java/com/uplants/app/`): `data/` (Retrofit APIs, repositories, `SessionStore` on DataStore),
   `ui/` (one package per feature), `AppContainer` for manual dependency injection.
 - **MVVM**: `ViewModel` → `StateFlow<UiState>` → `XScreen` (collects state) → `XContent` (stateless, previewable).
-- **Built**: login, sign-up (with client-side validation and unit tests), "continue as guest", session saved across restarts,
-  a fake backend switch for working without the server.
-- **Next**: feed and search, post detail (comments, like, rating), publish with camera / microphone / GPS / sensors, profiles,
+- **Networking**: one Retrofit API per service sharing one OkHttp client; the access token is added to every request and
+  renewed with the refresh token when a service answers `401`; failures are mapped to offline / 401 / 403 / 404 / 400 / 503
+  so each screen can show the right message.
+- **Built**: login, sign-up (with client-side validation and unit tests), "continue as guest", session saved across restarts;
+  **feed** ("For you" personalised feed for registered users, "Explore" for everyone with sort by newest / top rated /
+  most viewed / most popular and filters by content type and category, infinite scroll, pull to refresh);
+  **post detail** (photo, or video/audio player; species, tags, location and sensor data; like/dislike, 0–5 stars,
+  comments, view counting, save to a favourite list, share with another user, delete your own post).
+  Visitors can browse everything; actions that need an account ask them to log in.
+- **Next**: publish with camera / microphone / GPS / sensors, profiles and search, favourite lists screen, messages,
+  dashboard, notifications, then the optional offline cache and connectivity handling.
   favourite lists, messages, dashboard, then the optional offline cache and connectivity handling.
 
 ---

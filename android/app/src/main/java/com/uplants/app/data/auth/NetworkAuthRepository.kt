@@ -9,10 +9,10 @@ import java.io.IOException
 /** Talks to the real backend over REST. */
 class NetworkAuthRepository(
     private val api: AuthApi,
-    private val store: SessionStore,
+    private val store: SessionManager,
 ) : AuthRepository {
 
-    override val session: Flow<Session?> = store.session
+    override val session: Flow<Session?> = store.stored
 
     override suspend fun login(username: String, password: String) =
         authenticate { api.login(LoginRequest(username.trim(), password)) }
@@ -27,7 +27,7 @@ class NetworkAuthRepository(
             val response = call()
             // Supabase returns no token on sign-up while "Confirm email" is on (see database/README.md).
             if (response.accessToken.isBlank()) return Result.failure(AuthError.EmailNotConfirmed())
-            val session = Session(response.accessToken, response.user.id, response.user.username)
+            val session = Session(response.accessToken, response.refreshToken, response.user.id, response.user.username)
             store.save(session)
             Result.success(session)
         } catch (e: CancellationException) {
