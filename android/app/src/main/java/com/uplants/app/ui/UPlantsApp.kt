@@ -33,10 +33,10 @@ fun UPlantsApp(viewModel: AppViewModel = viewModel(factory = AppViewModel.Factor
             CircularProgressIndicator()
         }
         AuthState.SignedOut -> AuthNavHost(onContinueAsGuest = viewModel::continueAsGuest)
-        AuthState.Guest -> MainScreen(username = null, onSignOut = viewModel::signOut)
+        AuthState.Guest -> MainScreen(username = null, userId = null, onSignOut = viewModel::signOut)
         // key: a different account gets fresh screens (and ViewModels).
         is AuthState.SignedIn -> key(state.session.userId) {
-            MainScreen(username = state.session.username, onSignOut = viewModel::signOut)
+            MainScreen(username = state.session.username, userId = state.session.userId, onSignOut = viewModel::signOut)
         }
     }
 }

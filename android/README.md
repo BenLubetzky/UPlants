@@ -3,7 +3,9 @@
 Kotlin + Jetpack Compose, MVVM.
 Built so far: login / sign up / continue as guest, the **feed** (For you + Explore with sorting and filters),
 **post detail** (media, comments, like/dislike, 0–5 stars, save to a favourite list, share with a user)
-and **publish** (photo / video / audio / text, picked from the phone or recorded live with GPS and sensor data).
+**publish** (photo / video / audio / text, picked from the phone or recorded live with GPS and sensor data),
+**profiles** (yours and others': description, counters, posts, follow / unfollow, followers / following, edit profile,
+interests) and **search** (posts and people).
 
 Toolchain: Android Studio 2026.2+, AGP 9.4, Gradle 9.8 (via `gradlew`), Kotlin 2.4, compile SDK 37, target SDK 36 (37 would block emulator → PC traffic, see `app/build.gradle.kts`), min SDK 26.
 
@@ -48,7 +50,7 @@ app/src/main/java/com/uplants/app/
 │   ├── interactions/ # interactions-service: comments, reactions, ratings, views
 │   ├── favorites/    # favorites-service: "save to list"
 │   ├── messaging/    # messaging-service: share a post
-│   ├── users/        # users-service: user search
+│   ├── users/        # users-service: search, profiles, follows, interests
 │   └── device/       # GPS (LocationReader), sensors (SensorReader), microphone (AudioRecorder), local files
 └── ui/
     ├── UPlantsApp.kt, AppViewModel.kt   # auth screens, or the main app once logged in / guest
@@ -58,15 +60,19 @@ app/src/main/java/com/uplants/app/
     ├── feed/         # FeedScreen + FeedViewModel
     ├── post/         # PostDetailScreen + ViewModel, "save to list" and "share" sheets
     ├── publish/      # PublishScreen + ViewModel + validation
-    ├── account/      # account tab (becomes the profile later)
-    ├── common/       # PostCard, MediaPlayer, avatars, stars, loading/error states, UiText
+    ├── profile/      # ProfileScreen (own + others), edit profile, InterestsScreen, FollowListScreen
+    ├── search/       # SearchScreen: posts and people
+    ├── account/      # the Profile tab for visitors (log-in prompt)
+    ├── common/       # PostCard, UserRow, MediaPlayer, Paginator, avatars, stars, loading/error states, UiText
     └── theme/
 ```
 
 Each screen follows the same MVVM pattern: a `ViewModel` exposes a `StateFlow<UiState>`,
 the `XScreen` composable collects it, and a stateless `XContent` composable draws it (and has a `@Preview`).
 
-Visitors can browse everything; actions that need an account (like, rate, comment, save, share) show a
+Bottom navigation: Feed · Search · Publish · Profile. Tapping an author anywhere opens their profile.
+
+Visitors can browse everything; actions that need an account (like, rate, comment, save, share, follow) show a
 "Log in to continue" dialog.
 
 ## Publishing and device hardware

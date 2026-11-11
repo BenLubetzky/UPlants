@@ -97,10 +97,11 @@ fun UserAvatar(user: UserSummary?, modifier: Modifier = Modifier, size: Dp = 36.
     }
 }
 
-/** Avatar + name + "@username · 2h ago". */
+/** Avatar + name + "@username · 2h ago". With [onClick], tapping it opens the author's profile. */
 @Composable
-fun AuthorRow(user: UserSummary?, createdAt: String, modifier: Modifier = Modifier) {
-    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+fun AuthorRow(user: UserSummary?, createdAt: String, modifier: Modifier = Modifier, onClick: ((String) -> Unit)? = null) {
+    val clickable = if (onClick != null && user != null) Modifier.clickable { onClick(user.id) } else Modifier
+    Row(modifier.then(clickable), verticalAlignment = Alignment.CenterVertically) {
         UserAvatar(user)
         Spacer(Modifier.width(10.dp))
         Column {
@@ -110,6 +111,22 @@ fun AuthorRow(user: UserSummary?, createdAt: String, modifier: Modifier = Modifi
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/** A person in a list (search results, followers): avatar, name and @username. */
+@Composable
+fun UserRow(user: UserSummary, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        UserAvatar(user, size = 44.dp)
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(user.shownName, style = MaterialTheme.typography.titleSmall)
+            Text("@${user.username}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

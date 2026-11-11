@@ -306,7 +306,11 @@ Full endpoint references are in each service's README; below is the design summa
   the camera through the system camera app, audio with the microphone. Live recordings attach the GPS location
   (with the place name) and a snapshot of the sensors (accelerometer, gyroscope, light, pressure), as the brief asks.
   The form checks the same rules as content-service before uploading, and the file is streamed, not loaded into memory.
-- **Next**: profiles and search, favourite lists screen, messages, dashboard, notifications,
+- **Profiles and search**: every author name opens that user's profile (display name, description, number of posts,
+  followers and following, their posts); follow / unfollow, lists of followers and following. On your own profile:
+  edit name and description, and pick interest categories, which the "For you" feed uses. Search finds posts
+  (full-text on title, description and species) and people (username or display name), for visitors too.
+- **Next**: favourite lists screen, messages, dashboard, notifications,
   then the optional offline cache and connectivity handling.
   favourite lists, messages, dashboard, then the optional offline cache and connectivity handling.
 

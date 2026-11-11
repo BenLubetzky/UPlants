@@ -40,9 +40,9 @@ import com.uplants.app.ui.theme.UPlantsTheme
 
 /** A post in a list: author, preview, title, category/type and counters. Used by the feed (and later profiles, lists). */
 @Composable
-fun PostCard(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun PostCard(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, onAuthorClick: ((String) -> Unit)? = null) {
     Card(onClick = onClick, modifier = modifier.fillMaxWidth()) {
-        AuthorRow(post.author, post.createdAt, Modifier.padding(12.dp))
+        AuthorRow(post.author, post.createdAt, Modifier.fillMaxWidth().padding(12.dp), onClick = onAuthorClick)
         PostPreview(post)
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(post.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)

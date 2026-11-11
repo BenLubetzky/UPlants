@@ -3,6 +3,7 @@ package com.uplants.app.ui.post
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -100,6 +101,7 @@ fun PostDetailScreen(
     onBack: () -> Unit,
     onDeleted: (postId: String) -> Unit,
     onRequestLogin: () -> Unit,
+    onOpenProfile: (String) -> Unit,
     viewModel: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -120,6 +122,7 @@ fun PostDetailScreen(
         onShared = viewModel::onShared,
         onMessageShown = viewModel::messageShown,
         onRequestLogin = onRequestLogin,
+        onOpenProfile = onOpenProfile,
     )
 }
 
@@ -141,6 +144,7 @@ fun PostDetailContent(
     onShared: (UiText) -> Unit,
     onMessageShown: () -> Unit,
     onRequestLogin: () -> Unit,
+    onOpenProfile: (String) -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
     val message = state.message?.asString()
@@ -192,6 +196,7 @@ fun PostDetailContent(
                             onRate = { stars -> requireLogin { onRate(stars) } },
                             onSave = { requireLogin { openSheet = Sheet.SAVE } },
                             onShare = { requireLogin { openSheet = Sheet.SHARE } },
+                            onOpenProfile = onOpenProfile,
                         )
                     }
                     item(key = "comments-header") {
@@ -215,6 +220,7 @@ fun PostDetailContent(
                             comment = comment,
                             canDelete = comment.author?.id == state.currentUserId && state.currentUserId != null,
                             onDelete = { onDeleteComment(comment.id) },
+                            onOpenProfile = onOpenProfile,
                         )
                     }
                     item(key = "comments-footer") {
@@ -299,9 +305,10 @@ private fun PostBody(
     onRate: (Int?) -> Unit,
     onSave: () -> Unit,
     onShare: () -> Unit,
+    onOpenProfile: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        AuthorRow(post.author, post.createdAt, Modifier.padding(horizontal = 16.dp))
+        AuthorRow(post.author, post.createdAt, Modifier.fillMaxWidth().padding(horizontal = 16.dp), onClick = onOpenProfile)
         PostMedia(post)
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(post.title, style = MaterialTheme.typography.headlineSmall)
@@ -475,9 +482,11 @@ private fun JsonElement.readable(): String = when (this) {
 }
 
 @Composable
-private fun CommentItem(comment: Comment, canDelete: Boolean, onDelete: () -> Unit) {
+private fun CommentItem(comment: Comment, canDelete: Boolean, onDelete: () -> Unit, onOpenProfile: (String) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        UserAvatar(comment.author, size = 32.dp)
+        UserAvatar(comment.author, size = 32.dp, modifier = Modifier.clickable(enabled = comment.author != null) {
+            comment.author?.let { onOpenProfile(it.id) }
+        })
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

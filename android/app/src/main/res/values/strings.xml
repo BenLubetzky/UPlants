@@ -187,4 +187,43 @@
         <item quantity="one">Rated %1$s ★ by %2$d person</item>
         <item quantity="other">Rated %1$s ★ by %2$d people</item>
     </plurals>
+
+    <!-- Search -->
+    <string name="nav_search">Search</string>
+    <string name="search_title">Search</string>
+    <string name="search_hint">Plants, tips, people…</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_tab_posts">Posts</string>
+    <string name="search_tab_people">People</string>
+    <string name="search_start">Search posts by title, description or plant species, or find people by name.</string>
+    <string name="search_no_results">Nothing found for “%1$s”</string>
+
+    <!-- Profile -->
+    <string name="nav_profile">Profile</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_joined">Joined %1$s</string>
+    <string name="profile_no_bio">Add a description so people know what you grow.</string>
+    <string name="profile_stat_posts">Posts</string>
+    <string name="profile_stat_followers">Followers</string>
+    <string name="profile_stat_following">Following</string>
+    <string name="profile_follow">Follow</string>
+    <string name="profile_following_button">Following ✓</string>
+    <string name="profile_edit">Edit profile</string>
+    <string name="profile_field_name">Display name</string>
+    <string name="profile_field_bio">Description</string>
+    <string name="profile_saved">Profile updated</string>
+    <string name="profile_error_too_long">Name max 50 characters, description max 500</string>
+    <string name="profile_posts">Posts</string>
+    <string name="profile_no_posts">No posts yet.</string>
+    <string name="profile_no_posts_me">You haven\'t posted yet. Tap Publish to share your first plant.</string>
+    <string name="followers_empty">No followers yet.</string>
+    <string name="following_empty">Not following anyone yet.</string>
+    <string name="save">Save</string>
+
+    <!-- Interests -->
+    <string name="interests_title">Interests</string>
+    <string name="interests_pick">Pick interests</string>
+    <string name="interests_explained">Choose the topics you care about. Your “For you” feed shows more posts from these categories.</string>
+    <string name="interests_save">Save (%1$d selected)</string>
+    <string name="interests_too_many">Pick at most 20 interests</string>
 </resources>

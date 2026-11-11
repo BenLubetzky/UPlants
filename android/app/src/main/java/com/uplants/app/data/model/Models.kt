@@ -94,6 +94,24 @@ data class CommentPage(val comments: List<Comment>, val limit: Int, val offset: 
 @Serializable
 data class MyInteractions(val reaction: Int? = null, val stars: Int? = null)
 
+/** Full profile (users-service `GET /api/users/{id}`). The user's posts come from content-service. */
+@Serializable
+data class Profile(
+    val id: String,
+    val username: String,
+    @SerialName("display_name") val displayName: String? = null,
+    val bio: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("post_count") val postCount: Int = 0,
+    @SerialName("follower_count") val followerCount: Int = 0,
+    @SerialName("following_count") val followingCount: Int = 0,
+    /** Whether the logged-in user follows them; null for visitors and on your own profile. */
+    @SerialName("is_following") val isFollowing: Boolean? = null,
+) {
+    val summary: UserSummary get() = UserSummary(id, username, displayName, avatarUrl)
+}
+
 @Serializable
 data class UserPage(val users: List<UserSummary>, val limit: Int, val offset: Int)
 

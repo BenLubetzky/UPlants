@@ -7,9 +7,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -38,12 +41,20 @@ import com.uplants.app.ui.navigation.AccountRoute
 import com.uplants.app.ui.navigation.DELETED_POST_ID_KEY
 import com.uplants.app.ui.navigation.FEED_NEEDS_REFRESH_KEY
 import com.uplants.app.ui.navigation.FeedRoute
+import com.uplants.app.ui.navigation.FollowListRoute
+import com.uplants.app.ui.navigation.InterestsRoute
 import com.uplants.app.ui.navigation.PostDetailRoute
+import com.uplants.app.ui.navigation.ProfileRoute
 import com.uplants.app.ui.navigation.PublishRoute
+import com.uplants.app.ui.navigation.SearchRoute
 import com.uplants.app.ui.navigation.VIEWED_POST_ID_KEY
 import com.uplants.app.ui.post.PostDetailScreen
+import com.uplants.app.ui.profile.FollowListScreen
+import com.uplants.app.ui.profile.InterestsScreen
+import com.uplants.app.ui.profile.ProfileScreen
 import com.uplants.app.ui.publish.GuestPublishPrompt
 import com.uplants.app.ui.publish.PublishScreen
+import com.uplants.app.ui.search.SearchScreen
 import kotlin.reflect.KClass
 
 private data class TopLevelDestination(
@@ -56,24 +67,33 @@ private data class TopLevelDestination(
 
 private val topLevelDestinations = listOf(
     TopLevelDestination(FeedRoute, FeedRoute::class, R.string.nav_feed, Icons.Outlined.Home, Icons.Filled.Home),
+    TopLevelDestination(SearchRoute, SearchRoute::class, R.string.nav_search, Icons.Outlined.Search, Icons.Filled.Search),
     TopLevelDestination(PublishRoute, PublishRoute::class, R.string.nav_publish, Icons.Outlined.AddCircleOutline, Icons.Filled.AddCircle),
-    TopLevelDestination(AccountRoute, AccountRoute::class, R.string.nav_account, Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle),
+    TopLevelDestination(AccountRoute, AccountRoute::class, R.string.nav_profile, Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle),
 )
 
 /**
  * The app after login (or "continue as guest"): bottom navigation between the main tabs,
- * with detail screens (e.g. a post) opened full screen on top.
+ * with detail screens (a post, a profile, ...) opened full screen on top.
  *
  * @param username null for visitors.
+ * @param userId null for visitors.
  * @param onSignOut logs out a registered user, or sends a visitor to the login screen.
  */
 @Composable
-fun MainScreen(username: String?, onSignOut: () -> Unit) {
+fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
     val showBottomBar = topLevelDestinations.any { destination?.hasRoute(it.routeClass) == true }
-    val isLoggedIn = username != null
+    val isLoggedIn = userId != null
+
+    val openPost: (String) -> Unit = { navController.navigate(PostDetailRoute(it)) }
+    val openProfile: (String) -> Unit = { id ->
+        if (id == userId) navController.navigateToTab(AccountRoute) else navController.navigate(ProfileRoute(id))
+    }
+    val openFollowList: (String, Boolean) -> Unit = { id, followers -> navController.navigate(FollowListRoute(id, followers)) }
+    val openInterests: () -> Unit = { if (isLoggedIn) navController.navigate(InterestsRoute) else onSignOut() }
 
     Scaffold(
         // Each screen draws its own top bar; this Scaffold only adds the bottom bar.
@@ -96,18 +116,29 @@ fun MainScreen(username: String?, onSignOut: () -> Unit) {
     ) { padding ->
         NavHost(navController, startDestination = FeedRoute, modifier = Modifier.padding(padding)) {
             composable<FeedRoute> { entry ->
-                val deletedPostId by entry.savedStateHandle.getStateFlow<String?>(DELETED_POST_ID_KEY, null).collectAsState()
+                val changes = rememberPostChanges(entry)
                 val needsRefresh by entry.savedStateHandle.getStateFlow(FEED_NEEDS_REFRESH_KEY, false).collectAsState()
-                val viewedPostId by entry.savedStateHandle.getStateFlow<String?>(VIEWED_POST_ID_KEY, null).collectAsState()
                 FeedScreen(
                     isLoggedIn = isLoggedIn,
-                    onOpenPost = { navController.navigate(PostDetailRoute(it)) },
-                    deletedPostId = deletedPostId,
+                    onOpenPost = openPost,
+                    onOpenProfile = openProfile,
+                    onPickInterests = openInterests,
+                    deletedPostId = changes.deleted,
                     onDeletedPostHandled = { entry.savedStateHandle[DELETED_POST_ID_KEY] = null },
                     refreshRequested = needsRefresh,
                     onRefreshHandled = { entry.savedStateHandle[FEED_NEEDS_REFRESH_KEY] = false },
-                    viewedPostId = viewedPostId,
+                    viewedPostId = changes.viewed,
                     onViewedPostHandled = { entry.savedStateHandle[VIEWED_POST_ID_KEY] = null },
+                )
+            }
+            composable<SearchRoute> { entry ->
+                val changes = rememberPostChanges(entry)
+                SearchScreen(
+                    onOpenPost = openPost,
+                    onOpenProfile = openProfile,
+                    viewedPostId = changes.viewed,
+                    deletedPostId = changes.deleted,
+                    onPostChangesHandled = changes.clear,
                 )
             }
             composable<PublishRoute> {
@@ -123,6 +154,59 @@ fun MainScreen(username: String?, onSignOut: () -> Unit) {
                     GuestPublishPrompt(onLogin = onSignOut)
                 }
             }
+            composable<AccountRoute> { entry ->
+                if (userId != null) {
+                    val changes = rememberPostChanges(entry)
+                    ProfileScreen(
+                        userId = userId,
+                        onBack = null,
+                        onOpenPost = openPost,
+                        onOpenFollowList = openFollowList,
+                        onEditInterests = openInterests,
+                        onSignOut = onSignOut,
+                        onRequestLogin = onSignOut,
+                        viewedPostId = changes.viewed,
+                        deletedPostId = changes.deleted,
+                        onPostChangesHandled = changes.clear,
+                    )
+                } else {
+                    AccountScreen(username = username, onSignOut = onSignOut)
+                }
+            }
+            composable<ProfileRoute> { entry ->
+                val changes = rememberPostChanges(entry)
+                ProfileScreen(
+                    userId = entry.toRoute<ProfileRoute>().userId,
+                    onBack = { navController.popBackStack() },
+                    onOpenPost = openPost,
+                    onOpenFollowList = openFollowList,
+                    onEditInterests = openInterests,
+                    onSignOut = onSignOut,
+                    onRequestLogin = onSignOut,
+                    viewedPostId = changes.viewed,
+                    deletedPostId = changes.deleted,
+                    onPostChangesHandled = changes.clear,
+                )
+            }
+            composable<FollowListRoute> { entry ->
+                val route = entry.toRoute<FollowListRoute>()
+                FollowListScreen(
+                    userId = route.userId,
+                    followers = route.followers,
+                    onBack = { navController.popBackStack() },
+                    onOpenProfile = openProfile,
+                )
+            }
+            composable<InterestsRoute> {
+                InterestsScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = {
+                        // New interests change the personalised feed.
+                        runCatching { navController.getBackStackEntry<FeedRoute>().savedStateHandle[FEED_NEEDS_REFRESH_KEY] = true }
+                        navController.popBackStack()
+                    },
+                )
+            }
             composable<PostDetailRoute> { entry ->
                 val postId = entry.toRoute<PostDetailRoute>().postId
                 // Whatever happens here (likes, comments, views), the screen below refreshes this post on return.
@@ -132,17 +216,28 @@ fun MainScreen(username: String?, onSignOut: () -> Unit) {
                 }
                 PostDetailScreen(
                     onBack = { navController.popBackStack() },
-                    onDeleted = { postId ->
-                        navController.previousBackStackEntry?.savedStateHandle?.set(DELETED_POST_ID_KEY, postId)
+                    onDeleted = { deletedId ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set(DELETED_POST_ID_KEY, deletedId)
                         navController.popBackStack()
                     },
                     onRequestLogin = onSignOut,
+                    onOpenProfile = openProfile,
                 )
             }
-            composable<AccountRoute> {
-                AccountScreen(username = username, onSignOut = onSignOut)
-            }
         }
+    }
+}
+
+/** A post this screen showed was viewed (counters may have changed) or deleted on its detail screen. */
+private class PostChanges(val viewed: String?, val deleted: String?, val clear: () -> Unit)
+
+@Composable
+private fun rememberPostChanges(entry: NavBackStackEntry): PostChanges {
+    val viewed by entry.savedStateHandle.getStateFlow<String?>(VIEWED_POST_ID_KEY, null).collectAsState()
+    val deleted by entry.savedStateHandle.getStateFlow<String?>(DELETED_POST_ID_KEY, null).collectAsState()
+    return PostChanges(viewed, deleted) {
+        entry.savedStateHandle[VIEWED_POST_ID_KEY] = null
+        entry.savedStateHandle[DELETED_POST_ID_KEY] = null
     }
 }
 

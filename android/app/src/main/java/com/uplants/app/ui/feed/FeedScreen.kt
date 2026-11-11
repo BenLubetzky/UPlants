@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,7 +21,6 @@ import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,7 +40,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -54,16 +51,19 @@ import com.uplants.app.data.content.PostSort
 import com.uplants.app.data.model.ContentTypes
 import com.uplants.app.ui.common.EmptyBox
 import com.uplants.app.ui.common.ErrorBox
+import com.uplants.app.ui.common.LoadMoreWhenNearEnd
 import com.uplants.app.ui.common.LoadingBox
+import com.uplants.app.ui.common.PagedListFooter
 import com.uplants.app.ui.common.PostCard
 import com.uplants.app.ui.common.asString
 import com.uplants.app.ui.common.contentTypeLabel
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun FeedScreen(
     isLoggedIn: Boolean,
     onOpenPost: (String) -> Unit,
+    onOpenProfile: (String) -> Unit,
+    onPickInterests: () -> Unit,
     deletedPostId: String?,
     onDeletedPostHandled: () -> Unit,
     refreshRequested: Boolean,
@@ -101,6 +101,8 @@ fun FeedScreen(
         onRetry = viewModel::retry,
         onLoadMore = viewModel::loadMore,
         onOpenPost = onOpenPost,
+        onOpenProfile = onOpenProfile,
+        onPickInterests = onPickInterests,
     )
 }
 
@@ -116,6 +118,8 @@ fun FeedContent(
     onRetry: () -> Unit,
     onLoadMore: () -> Unit,
     onOpenPost: (String) -> Unit,
+    onOpenProfile: (String) -> Unit,
+    onPickInterests: () -> Unit,
 ) {
     Scaffold(
         // The bottom navigation bar (MainScreen) already handles the bottom inset.
@@ -159,7 +163,7 @@ fun FeedContent(
                     state.isLoading -> LoadingBox()
                     state.error != null -> ErrorBox(state.error, onRetry)
                     state.posts.isEmpty() -> EmptyBox(stringResource(if (state.tab == FeedTab.FOR_YOU) R.string.feed_for_you_empty else R.string.feed_empty))
-                    else -> PostList(state, onLoadMore, onOpenPost)
+                    else -> PostList(state, onLoadMore, onOpenPost, onOpenProfile, onPickInterests)
                 }
             }
         }
@@ -167,7 +171,13 @@ fun FeedContent(
 }
 
 @Composable
-private fun PostList(state: FeedUiState, onLoadMore: () -> Unit, onOpenPost: (String) -> Unit) {
+private fun PostList(
+    state: FeedUiState,
+    onLoadMore: () -> Unit,
+    onOpenPost: (String) -> Unit,
+    onOpenProfile: (String) -> Unit,
+    onPickInterests: () -> Unit,
+) {
     val listState = rememberLazyListState()
     LoadMoreWhenNearEnd(listState, onLoadMore)
     LazyColumn(
@@ -177,51 +187,29 @@ private fun PostList(state: FeedUiState, onLoadMore: () -> Unit, onOpenPost: (St
         modifier = Modifier.fillMaxSize(),
     ) {
         if (state.tab == FeedTab.FOR_YOU && state.personalized == false) {
-            item(key = "not-personalized") { NotPersonalizedHint() }
+            item(key = "not-personalized") { NotPersonalizedHint(onPickInterests) }
         }
         items(state.posts, key = { it.id }) { post ->
-            PostCard(post, onClick = { onOpenPost(post.id) })
+            PostCard(post, onClick = { onOpenPost(post.id) }, onAuthorClick = onOpenProfile)
         }
         item(key = "footer") {
-            Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
-                when {
-                    state.isLoadingMore -> CircularProgressIndicator(Modifier.size(28.dp))
-                    state.loadMoreError != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(state.loadMoreError.asString(), color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = onLoadMore) { Text(stringResource(R.string.retry)) }
-                    }
-                    state.endReached -> Text(
-                        stringResource(R.string.feed_end),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            PagedListFooter(state.isLoadingMore, state.loadMoreError, state.endReached, onRetry = onLoadMore)
         }
     }
 }
 
-/** Asks for the next page when the last few items become visible. */
 @Composable
-private fun LoadMoreWhenNearEnd(listState: LazyListState, onLoadMore: () -> Unit) {
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val info = listState.layoutInfo
-            val last = info.visibleItemsInfo.lastOrNull()?.index ?: 0
-            info.totalItemsCount > 0 && last >= info.totalItemsCount - 4
-        }
-            .distinctUntilChanged()
-            .collect { nearEnd -> if (nearEnd) onLoadMore() }
-    }
-}
-
-@Composable
-private fun NotPersonalizedHint() {
+private fun NotPersonalizedHint(onPickInterests: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Info, null)
-            Box(Modifier.width(12.dp))
-            Text(stringResource(R.string.feed_not_personalized), style = MaterialTheme.typography.bodyMedium)
+        Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Info, null)
+                Box(Modifier.width(12.dp))
+                Text(stringResource(R.string.feed_not_personalized), style = MaterialTheme.typography.bodyMedium)
+            }
+            TextButton(onClick = onPickInterests, modifier = Modifier.align(Alignment.End)) {
+                Text(stringResource(R.string.interests_pick))
+            }
         }
     }
 }

@@ -11,7 +11,21 @@ object FeedRoute
 object PublishRoute
 
 @Serializable
+object SearchRoute
+
+/** The "Profile" tab: your own profile, or the log-in prompt for visitors. */
+@Serializable
 object AccountRoute
+
+/** Someone else's profile. */
+@Serializable
+data class ProfileRoute(val userId: String)
+
+@Serializable
+data class FollowListRoute(val userId: String, val followers: Boolean)
+
+@Serializable
+object InterestsRoute
 
 @Serializable
 data class PostDetailRoute(val postId: String)
