@@ -5,7 +5,8 @@ Built so far: login / sign up / continue as guest, the **feed** (For you + Explo
 **post detail** (media, comments, like/dislike, 0–5 stars, save to a favourite list, share with a user)
 **publish** (photo / video / audio / text, picked from the phone or recorded live with GPS and sensor data),
 **profiles** (yours and others': description, counters, posts, follow / unfollow, followers / following, edit profile,
-interests) and **search** (posts and people).
+interests), **search** (posts and people), **favourite lists** (create, rename, public/private, delete, remove posts;
+others' public lists on their profile) and **messages** (inbox with unread badge, chat, shared posts).
 
 Toolchain: Android Studio 2026.2+, AGP 9.4, Gradle 9.8 (via `gradlew`), Kotlin 2.4, compile SDK 37, target SDK 36 (37 would block emulator → PC traffic, see `app/build.gradle.kts`), min SDK 26.
 
@@ -48,8 +49,8 @@ app/src/main/java/com/uplants/app/
 │   ├── auth/         # login/register (network + fake), SessionStore (DataStore), SessionManager
 │   ├── content/      # content-service: feed, posts, categories
 │   ├── interactions/ # interactions-service: comments, reactions, ratings, views
-│   ├── favorites/    # favorites-service: "save to list"
-│   ├── messaging/    # messaging-service: share a post
+│   ├── favorites/    # favorites-service: lists, "save to list"
+│   ├── messaging/    # messaging-service: inbox, chat, share a post, unread count
 │   ├── users/        # users-service: search, profiles, follows, interests
 │   └── device/       # GPS (LocationReader), sensors (SensorReader), microphone (AudioRecorder), local files
 └── ui/
@@ -62,6 +63,8 @@ app/src/main/java/com/uplants/app/
     ├── publish/      # PublishScreen + ViewModel + validation
     ├── profile/      # ProfileScreen (own + others), edit profile, InterestsScreen, FollowListScreen
     ├── search/       # SearchScreen: posts and people
+    ├── lists/        # MyListsScreen, ListDetailScreen
+    ├── messages/     # InboxScreen, ChatScreen (polls for new messages every 5 s while open)
     ├── account/      # the Profile tab for visitors (log-in prompt)
     ├── common/       # PostCard, UserRow, MediaPlayer, Paginator, avatars, stars, loading/error states, UiText
     └── theme/
@@ -71,6 +74,7 @@ Each screen follows the same MVVM pattern: a `ViewModel` exposes a `StateFlow<Ui
 the `XScreen` composable collects it, and a stateless `XContent` composable draws it (and has a `@Preview`).
 
 Bottom navigation: Feed · Search · Publish · Profile. Tapping an author anywhere opens their profile.
+Messages open from the chat icon on the feed (with the unread count); lists from "Lists" on your profile.
 
 Visitors can browse everything; actions that need an account (like, rate, comment, save, share, follow) show a
 "Log in to continue" dialog.

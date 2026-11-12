@@ -226,4 +226,37 @@
     <string name="interests_explained">Choose the topics you care about. Your “For you” feed shows more posts from these categories.</string>
     <string name="interests_save">Save (%1$d selected)</string>
     <string name="interests_too_many">Pick at most 20 interests</string>
+
+    <!-- Favourite lists screens -->
+    <string name="lists_title">Lists</string>
+    <string name="lists_empty_screen">No lists yet. Create one, then save posts into it from any post.</string>
+    <string name="list_new">New list</string>
+    <string name="list_public_switch">Public</string>
+    <string name="list_public_explained">Anyone can see it on your profile</string>
+    <string name="list_private_explained">Only you can see it</string>
+    <string name="list_by">by @%1$s</string>
+    <string name="list_rename">Rename list</string>
+    <string name="list_delete">Delete list</string>
+    <string name="list_delete_body">This deletes the list. The posts in it are not deleted.</string>
+    <string name="list_remove_post">Remove from list</string>
+    <string name="list_post_removed">Removed from the list</string>
+    <string name="list_empty">This list is empty.</string>
+    <string name="list_empty_owner">Nothing here yet. Open a post and tap the bookmark to save it here.</string>
+    <plurals name="list_post_count">
+        <item quantity="one">%1$d post</item>
+        <item quantity="other">%1$d posts</item>
+    </plurals>
+
+    <!-- Messages -->
+    <string name="messages_title">Messages</string>
+    <string name="messages_empty">No messages yet. Open someone\'s profile and tap Message, or share a post with them.</string>
+    <string name="messages_shared_post">Shared a post: %1$s</string>
+    <string name="messages_shared_post_deleted">Shared a post that was deleted</string>
+    <string name="profile_message">Message</string>
+    <string name="chat_hint">Write a message…</string>
+    <string name="chat_send">Send message</string>
+    <string name="chat_empty">Say hi to %1$s 🌱</string>
+    <string name="chat_load_older">Load older messages</string>
+    <string name="chat_delete_title">Delete message</string>
+    <string name="chat_delete_body">Delete this message for both of you?</string>
 </resources>

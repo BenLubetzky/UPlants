@@ -37,7 +37,15 @@ import androidx.navigation.toRoute
 import com.uplants.app.R
 import com.uplants.app.ui.account.AccountScreen
 import com.uplants.app.ui.feed.FeedScreen
+import com.uplants.app.ui.lists.ListDetailScreen
+import com.uplants.app.ui.lists.MyListsScreen
+import com.uplants.app.ui.messages.ChatScreen
+import com.uplants.app.ui.messages.InboxScreen
 import com.uplants.app.ui.navigation.AccountRoute
+import com.uplants.app.ui.navigation.ChatRoute
+import com.uplants.app.ui.navigation.InboxRoute
+import com.uplants.app.ui.navigation.ListDetailRoute
+import com.uplants.app.ui.navigation.MyListsRoute
 import com.uplants.app.ui.navigation.DELETED_POST_ID_KEY
 import com.uplants.app.ui.navigation.FEED_NEEDS_REFRESH_KEY
 import com.uplants.app.ui.navigation.FeedRoute
@@ -94,6 +102,10 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
     }
     val openFollowList: (String, Boolean) -> Unit = { id, followers -> navController.navigate(FollowListRoute(id, followers)) }
     val openInterests: () -> Unit = { if (isLoggedIn) navController.navigate(InterestsRoute) else onSignOut() }
+    val openMyLists: () -> Unit = { navController.navigate(MyListsRoute) }
+    val openList: (String) -> Unit = { navController.navigate(ListDetailRoute(it)) }
+    val openInbox: () -> Unit = { navController.navigate(InboxRoute) }
+    val openChat: (String, String) -> Unit = { id, name -> navController.navigate(ChatRoute(id, name)) }
 
     Scaffold(
         // Each screen draws its own top bar; this Scaffold only adds the bottom bar.
@@ -123,6 +135,7 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
                     onOpenPost = openPost,
                     onOpenProfile = openProfile,
                     onPickInterests = openInterests,
+                    onOpenInbox = openInbox,
                     deletedPostId = changes.deleted,
                     onDeletedPostHandled = { entry.savedStateHandle[DELETED_POST_ID_KEY] = null },
                     refreshRequested = needsRefresh,
@@ -163,6 +176,9 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
                         onOpenPost = openPost,
                         onOpenFollowList = openFollowList,
                         onEditInterests = openInterests,
+                        onOpenMyLists = openMyLists,
+                        onOpenList = openList,
+                        onMessage = openChat,
                         onSignOut = onSignOut,
                         onRequestLogin = onSignOut,
                         viewedPostId = changes.viewed,
@@ -181,6 +197,9 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
                     onOpenPost = openPost,
                     onOpenFollowList = openFollowList,
                     onEditInterests = openInterests,
+                    onOpenMyLists = openMyLists,
+                    onOpenList = openList,
+                    onMessage = openChat,
                     onSignOut = onSignOut,
                     onRequestLogin = onSignOut,
                     viewedPostId = changes.viewed,
@@ -205,6 +224,30 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
                         runCatching { navController.getBackStackEntry<FeedRoute>().savedStateHandle[FEED_NEEDS_REFRESH_KEY] = true }
                         navController.popBackStack()
                     },
+                )
+            }
+            composable<MyListsRoute> {
+                MyListsScreen(onBack = { navController.popBackStack() }, onOpenList = openList)
+            }
+            composable<ListDetailRoute> { entry ->
+                ListDetailScreen(
+                    listId = entry.toRoute<ListDetailRoute>().listId,
+                    onBack = { navController.popBackStack() },
+                    onOpenPost = openPost,
+                    onOpenProfile = openProfile,
+                )
+            }
+            composable<InboxRoute> {
+                InboxScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
+            }
+            composable<ChatRoute> { entry ->
+                val route = entry.toRoute<ChatRoute>()
+                ChatScreen(
+                    userId = route.userId,
+                    name = route.name,
+                    onBack = { navController.popBackStack() },
+                    onOpenProfile = openProfile,
+                    onOpenPost = openPost,
                 )
             }
             composable<PostDetailRoute> { entry ->

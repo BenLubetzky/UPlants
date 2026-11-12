@@ -10,15 +10,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Interests
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uplants.app.R
+import com.uplants.app.data.model.FavoriteList
 import com.uplants.app.data.model.Post
 import com.uplants.app.data.model.Profile
 import com.uplants.app.ui.common.ErrorBox
@@ -79,6 +86,9 @@ fun ProfileScreen(
     onOpenPost: (String) -> Unit,
     onOpenFollowList: (userId: String, followers: Boolean) -> Unit,
     onEditInterests: () -> Unit,
+    onOpenMyLists: () -> Unit,
+    onOpenList: (String) -> Unit,
+    onMessage: (userId: String, name: String) -> Unit,
     onSignOut: () -> Unit,
     onRequestLogin: () -> Unit,
     viewedPostId: String?,
@@ -107,6 +117,9 @@ fun ProfileScreen(
         onOpenPost = onOpenPost,
         onOpenFollowList = onOpenFollowList,
         onEditInterests = onEditInterests,
+        onOpenMyLists = onOpenMyLists,
+        onOpenList = onOpenList,
+        onMessage = onMessage,
         onSignOut = onSignOut,
         onRequestLogin = onRequestLogin,
     )
@@ -128,6 +141,9 @@ fun ProfileContent(
     onOpenPost: (String) -> Unit,
     onOpenFollowList: (userId: String, followers: Boolean) -> Unit,
     onEditInterests: () -> Unit,
+    onOpenMyLists: () -> Unit,
+    onOpenList: (String) -> Unit,
+    onMessage: (userId: String, name: String) -> Unit,
     onSignOut: () -> Unit,
     onRequestLogin: () -> Unit,
 ) {
@@ -192,8 +208,13 @@ fun ProfileContent(
                             onToggleFollow = { if (state.isLoggedIn) onToggleFollow() else showLoginDialog = true },
                             onEdit = { editing = true },
                             onEditInterests = onEditInterests,
+                            onOpenMyLists = onOpenMyLists,
+                            onMessage = { if (state.isLoggedIn) onMessage(profile.id, profile.summary.shownName) else showLoginDialog = true },
                             onOpenFollowList = onOpenFollowList,
                         )
+                    }
+                    if (!state.isMe && state.lists.isNotEmpty()) {
+                        item(key = "lists") { PublicLists(state.lists, onOpenList) }
                     }
                     item(key = "posts-title") {
                         Text(stringResource(R.string.profile_posts), style = MaterialTheme.typography.titleMedium)
@@ -235,6 +256,7 @@ fun ProfileContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileHeader(
     profile: Profile,
@@ -242,6 +264,8 @@ private fun ProfileHeader(
     onToggleFollow: () -> Unit,
     onEdit: () -> Unit,
     onEditInterests: () -> Unit,
+    onOpenMyLists: () -> Unit,
+    onMessage: () -> Unit,
     onOpenFollowList: (userId: String, followers: Boolean) -> Unit,
 ) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -263,7 +287,7 @@ private fun ProfileHeader(
             Stat(profile.followingCount, stringResource(R.string.profile_stat_following)) { onOpenFollowList(profile.id, false) }
         }
         if (state.isMe) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
                 OutlinedButton(onClick = onEdit) {
                     Icon(Icons.Filled.Edit, null, Modifier.size(18.dp))
                     Text(stringResource(R.string.profile_edit), Modifier.padding(start = 6.dp))
@@ -272,11 +296,40 @@ private fun ProfileHeader(
                     Icon(Icons.Filled.Interests, null, Modifier.size(18.dp))
                     Text(stringResource(R.string.interests_title), Modifier.padding(start = 6.dp))
                 }
+                OutlinedButton(onClick = onOpenMyLists) {
+                    Icon(Icons.Filled.Bookmarks, null, Modifier.size(18.dp))
+                    Text(stringResource(R.string.lists_title), Modifier.padding(start = 6.dp))
+                }
             }
-        } else if (profile.isFollowing == true) {
-            OutlinedButton(onClick = onToggleFollow, enabled = !state.isFollowBusy) { Text(stringResource(R.string.profile_following_button)) }
         } else {
-            Button(onClick = onToggleFollow, enabled = !state.isFollowBusy) { Text(stringResource(R.string.profile_follow)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (profile.isFollowing == true) {
+                    OutlinedButton(onClick = onToggleFollow, enabled = !state.isFollowBusy) { Text(stringResource(R.string.profile_following_button)) }
+                } else {
+                    Button(onClick = onToggleFollow, enabled = !state.isFollowBusy) { Text(stringResource(R.string.profile_follow)) }
+                }
+                OutlinedButton(onClick = onMessage) {
+                    Icon(Icons.AutoMirrored.Filled.Chat, null, Modifier.size(18.dp))
+                    Text(stringResource(R.string.profile_message), Modifier.padding(start = 6.dp))
+                }
+            }
+        }
+    }
+}
+
+/** Someone's public favourite lists. */
+@Composable
+private fun PublicLists(lists: List<FavoriteList>, onOpenList: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.lists_title), style = MaterialTheme.typography.titleMedium)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(lists, key = { it.id }) { list ->
+                AssistChip(
+                    onClick = { onOpenList(list.id) },
+                    label = { Text(list.name + " (" + list.itemCount + ")") },
+                    leadingIcon = { Icon(Icons.Filled.Bookmarks, null, Modifier.size(18.dp)) },
+                )
+            }
         }
     }
 }

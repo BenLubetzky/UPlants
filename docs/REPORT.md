@@ -310,8 +310,12 @@ Full endpoint references are in each service's README; below is the design summa
   followers and following, their posts); follow / unfollow, lists of followers and following. On your own profile:
   edit name and description, and pick interest categories, which the "For you" feed uses. Search finds posts
   (full-text on title, description and species) and people (username or display name), for visitors too.
-- **Next**: favourite lists screen, messages, dashboard, notifications,
-  then the optional offline cache and connectivity handling.
+- **Favourite lists and messages**: "Lists" on your profile shows your lists (create, rename, public / private, delete,
+  remove posts); other users' public lists appear on their profiles. Messages open from the feed's chat icon, which shows
+  the unread count: an inbox with one conversation per person (unread ones in bold), and a chat that checks for new
+  messages every 5 seconds while open, marks them as read, and shows shared posts as cards that open the post.
+  Long-press your own message to delete it. "Message" on a profile starts a conversation.
+- **Next**: dashboard, notifications, then the optional offline cache and connectivity handling.
   favourite lists, messages, dashboard, then the optional offline cache and connectivity handling.
 
 ---

@@ -8,6 +8,7 @@ import com.uplants.app.appContainer
 import com.uplants.app.data.content.ContentRepository
 import com.uplants.app.data.content.PostFilter
 import com.uplants.app.data.content.PostSort
+import com.uplants.app.data.messaging.MessagingRepository
 import com.uplants.app.data.model.Category
 import com.uplants.app.data.model.Post
 import com.uplants.app.data.model.PostPage
@@ -42,6 +43,8 @@ data class FeedUiState(
     val loadMoreError: UiText? = null,
     /** "For you" only: false = the user has no follows/interests yet, so these are popular posts. */
     val personalized: Boolean? = null,
+    /** Unread messages, for the badge on the inbox button. */
+    val unreadMessages: Int = 0,
 )
 
 /**
@@ -50,6 +53,7 @@ data class FeedUiState(
  */
 class FeedViewModel(
     private val content: ContentRepository,
+    private val messaging: MessagingRepository,
     isLoggedIn: Boolean,
 ) : ViewModel() {
 
@@ -77,7 +81,18 @@ class FeedViewModel(
     fun selectType(type: String?) = changeFilter { it.copy(type = type) }
     fun selectCategory(categoryId: Int?) = changeFilter { it.copy(categoryId = categoryId) }
 
-    fun refresh() = reload(refreshing = true)
+    fun refresh() {
+        reload(refreshing = true)
+        refreshUnread()
+    }
+
+    /** Called whenever the feed is shown, e.g. back from a chat. */
+    fun refreshUnread() {
+        if (!_uiState.value.isLoggedIn) return
+        viewModelScope.launch {
+            messaging.unreadCount().onSuccess { n -> _uiState.update { it.copy(unreadMessages = n) } }
+        }
+    }
 
     fun retry() = reload()
 
@@ -172,7 +187,7 @@ class FeedViewModel(
         const val PAGE_SIZE = 20
 
         fun factory(isLoggedIn: Boolean) = viewModelFactory {
-            initializer { FeedViewModel(appContainer.contentRepository, isLoggedIn) }
+            initializer { FeedViewModel(appContainer.contentRepository, appContainer.messagingRepository, isLoggedIn) }
         }
     }
 }

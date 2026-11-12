@@ -9,6 +9,8 @@ import com.uplants.app.appContainer
 import com.uplants.app.data.content.ContentRepository
 import com.uplants.app.data.content.PostFilter
 import com.uplants.app.data.content.PostSort
+import com.uplants.app.data.favorites.FavoritesRepository
+import com.uplants.app.data.model.FavoriteList
 import com.uplants.app.data.model.Post
 import com.uplants.app.data.model.Profile
 import com.uplants.app.data.users.UsersRepository
@@ -27,6 +29,8 @@ data class ProfileUiState(
     /** Null for visitors. */
     val currentUserId: String?,
     val profile: Profile? = null,
+    /** Their public lists (all of them on your own profile). */
+    val lists: List<FavoriteList> = emptyList(),
     val isLoading: Boolean = true,
     val error: UiText? = null,
     val isFollowBusy: Boolean = false,
@@ -48,6 +52,7 @@ class ProfileViewModel(
     currentUserId: String?,
     private val users: UsersRepository,
     private val content: ContentRepository,
+    private val favorites: FavoritesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState(userId = userId, currentUserId = currentUserId))
@@ -68,11 +73,20 @@ class ProfileViewModel(
     fun refresh() {
         loadProfile(quietly = true)
         postsPager.reload()
+        loadLists()
     }
 
     private fun load() {
         loadProfile(quietly = false)
         postsPager.reload()
+        loadLists()
+    }
+
+    /** Lists are optional on a profile: if favorites-service is down the rest still shows. */
+    private fun loadLists() {
+        viewModelScope.launch {
+            favorites.userLists(_uiState.value.userId).onSuccess { lists -> _uiState.update { it.copy(lists = lists) } }
+        }
     }
 
     private fun loadProfile(quietly: Boolean) {
@@ -159,7 +173,13 @@ class ProfileViewModel(
         fun factory(userId: String) = viewModelFactory {
             initializer {
                 val container = appContainer
-                ProfileViewModel(userId, container.sessions.current()?.userId, container.usersRepository, container.contentRepository)
+                ProfileViewModel(
+                    userId,
+                    container.sessions.current()?.userId,
+                    container.usersRepository,
+                    container.contentRepository,
+                    container.favoritesRepository,
+                )
             }
         }
     }

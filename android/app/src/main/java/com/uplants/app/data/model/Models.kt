@@ -134,6 +134,43 @@ data class FavoriteList(
     @SerialName("item_count") val itemCount: Int = 0,
 )
 
+/** Enough of a post to draw a small card (favourite lists, shared posts). The full post comes from content-service. */
+@Serializable
+data class PostSummary(
+    val id: String,
+    val title: String,
+    @SerialName("content_type") val contentType: String,
+    @SerialName("media_url") val mediaUrl: String? = null,
+    @SerialName("thumbnail_url") val thumbnailUrl: String? = null,
+    @SerialName("rating_avg") val ratingAvg: Double = 0.0,
+    @SerialName("like_count") val likeCount: Int = 0,
+    @SerialName("comment_count") val commentCount: Int = 0,
+    @SerialName("created_at") val createdAt: String? = null,
+    val author: UserSummary? = null,
+    val category: Category? = null,
+) {
+    val previewImageUrl: String?
+        get() = thumbnailUrl ?: mediaUrl.takeIf { contentType == ContentTypes.PHOTO }
+}
+
+/** One post saved in a favourite list. */
+@Serializable
+data class SavedPost(@SerialName("added_at") val addedAt: String, val post: PostSummary)
+
+/** A favourite list with a page of its posts (favorites-service `GET /lists/{id}`). */
+@Serializable
+data class FavoriteListDetail(
+    val id: String,
+    val owner: UserSummary? = null,
+    val name: String,
+    @SerialName("is_public") val isPublic: Boolean,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("item_count") val itemCount: Int = 0,
+    val posts: List<SavedPost>,
+    val limit: Int,
+    val offset: Int,
+)
+
 @Serializable
 data class Message(
     val id: String,
@@ -141,8 +178,27 @@ data class Message(
     @SerialName("recipient_id") val recipientId: String,
     val body: String? = null,
     @SerialName("shared_post_id") val sharedPostId: String? = null,
+    @SerialName("read_at") val readAt: String? = null,
     @SerialName("created_at") val createdAt: String,
+    val sender: UserSummary? = null,
+    val recipient: UserSummary? = null,
+    /** Null when nothing was shared, or the post was deleted since. */
+    @SerialName("shared_post") val sharedPost: PostSummary? = null,
 )
+
+@Serializable
+data class MessagePage(val messages: List<Message>, val limit: Int, val offset: Int)
+
+/** One row of the inbox: the other person, the latest message and how many of theirs are unread. */
+@Serializable
+data class Conversation(
+    val user: UserSummary,
+    @SerialName("last_message") val lastMessage: Message,
+    @SerialName("unread_count") val unreadCount: Int,
+)
+
+@Serializable
+data class UnreadCount(val unread: Int)
 
 /** Metadata of a new post (`POST /api/content/posts`, multipart part `metadata`). */
 @Serializable

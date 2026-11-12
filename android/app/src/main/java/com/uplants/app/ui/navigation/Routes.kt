@@ -28,6 +28,19 @@ data class FollowListRoute(val userId: String, val followers: Boolean)
 object InterestsRoute
 
 @Serializable
+object MyListsRoute
+
+@Serializable
+data class ListDetailRoute(val listId: String)
+
+@Serializable
+object InboxRoute
+
+/** [name] is only for the title bar, so it shows before anything loads. */
+@Serializable
+data class ChatRoute(val userId: String, val name: String)
+
+@Serializable
 data class PostDetailRoute(val postId: String)
 
 /** Key a detail screen sets on the previous back-stack entry when it deleted the post. */

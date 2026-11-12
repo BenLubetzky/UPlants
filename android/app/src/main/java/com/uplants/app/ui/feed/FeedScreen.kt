@@ -16,9 +16,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -26,6 +29,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
@@ -64,6 +68,7 @@ fun FeedScreen(
     onOpenPost: (String) -> Unit,
     onOpenProfile: (String) -> Unit,
     onPickInterests: () -> Unit,
+    onOpenInbox: () -> Unit,
     deletedPostId: String?,
     onDeletedPostHandled: () -> Unit,
     refreshRequested: Boolean,
@@ -73,6 +78,7 @@ fun FeedScreen(
     viewModel: FeedViewModel = viewModel(factory = FeedViewModel.factory(isLoggedIn)),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { viewModel.refreshUnread() }
     LaunchedEffect(deletedPostId) {
         if (deletedPostId != null) {
             viewModel.removePost(deletedPostId)
@@ -103,6 +109,7 @@ fun FeedScreen(
         onOpenPost = onOpenPost,
         onOpenProfile = onOpenProfile,
         onPickInterests = onPickInterests,
+        onOpenInbox = onOpenInbox,
     )
 }
 
@@ -120,6 +127,7 @@ fun FeedContent(
     onOpenPost: (String) -> Unit,
     onOpenProfile: (String) -> Unit,
     onPickInterests: () -> Unit,
+    onOpenInbox: () -> Unit,
 ) {
     Scaffold(
         // The bottom navigation bar (MainScreen) already handles the bottom inset.
@@ -131,6 +139,15 @@ fun FeedContent(
                         Icon(Icons.Filled.Eco, null, tint = MaterialTheme.colorScheme.primary)
                         Box(Modifier.width(8.dp))
                         Text(stringResource(R.string.app_name))
+                    }
+                },
+                actions = {
+                    if (state.isLoggedIn) {
+                        IconButton(onClick = onOpenInbox) {
+                            BadgedBox(badge = { if (state.unreadMessages > 0) Badge { Text(state.unreadMessages.toString()) } }) {
+                                Icon(Icons.AutoMirrored.Filled.Chat, stringResource(R.string.messages_title))
+                            }
+                        }
                     }
                 },
             )
