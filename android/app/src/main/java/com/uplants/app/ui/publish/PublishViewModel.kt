@@ -17,7 +17,10 @@ import com.uplants.app.data.model.ContentTypes
 import com.uplants.app.data.model.NewPost
 import com.uplants.app.ui.common.UiText
 import com.uplants.app.ui.common.toUiText
+import com.uplants.app.data.network.NetworkMonitor
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,6 +66,7 @@ data class PublishUiState(
 class PublishViewModel(
     private val content: ContentRepository,
     private val device: DeviceServices,
+    private val network: NetworkMonitor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PublishUiState())
@@ -262,10 +266,22 @@ class PublishViewModel(
         )
         _uiState.update { it.copy(isPublishing = true, error = null) }
         viewModelScope.launch {
-            content.createPost(post, s.media.takeIf { s.contentType != ContentTypes.TEXT })
+            content.createPost(post, uploadVersion(s))
                 .onSuccess { created -> _uiState.update { it.copy(isPublishing = false, publishedPostId = created.id) } }
                 .onFailure { e -> _uiState.update { it.copy(isPublishing = false, error = e.toUiText()) } }
         }
+    }
+
+    /**
+     * The file to upload. Photos are shrunk on mobile data / Data Saver / low-memory phones, or when they are big
+     * anyway (requirement 24); videos and audio are sent as they are.
+     */
+    private suspend fun uploadVersion(s: PublishUiState): PickedMedia? {
+        val media = s.media ?: return null
+        if (s.contentType != ContentTypes.PHOTO) return media.takeIf { s.contentType != ContentTypes.TEXT }
+        val shouldShrink = network.status.value.lowFidelity || media.sizeBytes > BIG_PHOTO_BYTES
+        if (!shouldShrink) return media
+        return withContext(Dispatchers.Default) { device.compressPhoto(media) } ?: media
     }
 
     override fun onCleared() {
@@ -273,10 +289,12 @@ class PublishViewModel(
     }
 
     companion object {
+        private const val BIG_PHOTO_BYTES = 3L * 1024 * 1024
+
         val Factory = viewModelFactory {
             initializer {
                 val container = appContainer
-                PublishViewModel(container.contentRepository, container.device)
+                PublishViewModel(container.contentRepository, container.device, container.networkMonitor)
             }
         }
     }

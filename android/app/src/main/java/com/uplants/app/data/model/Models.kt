@@ -2,6 +2,7 @@ package com.uplants.app.data.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonObject
 
 // JSON shapes returned by the services. Field names follow each service's README.
@@ -61,6 +62,8 @@ data class Post(
     @SerialName("rating_count") val ratingCount: Int = 0,
     @SerialName("interaction_count") val interactionCount: Int = 0,
     @SerialName("created_at") val createdAt: String,
+    /** Set (epoch millis) when this came from the offline cache instead of the service. */
+    @Transient val savedAt: Long? = null,
 ) {
     val isLive: Boolean get() = source == "live"
 
@@ -76,6 +79,8 @@ data class PostPage(
     val offset: Int,
     /** Only on `/feed`: false when the user has no follows/interests yet and gets popular posts. */
     val personalized: Boolean? = null,
+    /** Set (epoch millis) when this page came from the offline cache instead of the service. */
+    @Transient val savedAt: Long? = null,
 )
 
 @Serializable

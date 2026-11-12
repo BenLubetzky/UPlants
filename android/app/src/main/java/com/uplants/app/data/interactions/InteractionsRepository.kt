@@ -5,6 +5,7 @@ import com.uplants.app.data.model.CommentPage
 import com.uplants.app.data.model.MyInteractions
 import com.uplants.app.data.model.PostStats
 import com.uplants.app.data.network.apiCall
+import com.uplants.app.data.offline.OfflineCache
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -56,10 +57,10 @@ data class ReactionRequest(val value: Int)
 @Serializable
 data class RatingRequest(val stars: Int)
 
-class InteractionsRepository(private val api: InteractionsApi) {
+class InteractionsRepository(private val api: InteractionsApi, private val cache: OfflineCache) {
 
     suspend fun comments(postId: String, limit: Int, offset: Int): Result<CommentPage> =
-        apiCall { api.comments(postId, limit, offset) }
+        cache.withFallback("comments|$postId|$limit|$offset", CommentPage.serializer()) { apiCall { api.comments(postId, limit, offset) } }
 
     suspend fun addComment(postId: String, body: String): Result<Comment> =
         apiCall { api.addComment(postId, NewComment(body.trim())) }

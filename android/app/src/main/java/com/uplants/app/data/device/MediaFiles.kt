@@ -1,6 +1,9 @@
 package com.uplants.app.data.device
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.os.Build
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -50,6 +53,38 @@ object MediaFiles {
         val mime = resolver.getType(uri)?.takeIf { it.contains('/') && !it.endsWith("/*") } ?: fallbackMime ?: return null
         val duration = if (mime.startsWith("video/") || mime.startsWith("audio/")) durationSeconds(context, uri) else null
         return PickedMedia(uri, mime, size, name, duration, isLive)
+    }
+
+    /**
+     * Requirement 24: a smaller copy of a photo for slow / paid connections, at most [maxSide] pixels on its longest
+     * side, JPEG at [quality]. ImageDecoder applies the camera's EXIF rotation. Null if it can't be done
+     * (Android < 9, or the image can't be read): the original is uploaded instead.
+     */
+    fun compressPhoto(context: Context, media: PickedMedia, maxSide: Int = 1600, quality: Int = 80): PickedMedia? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
+        return runCatching {
+            val source = ImageDecoder.createSource(context.contentResolver, media.uri)
+            val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                val w = info.size.width
+                val h = info.size.height
+                val scale = maxSide.toFloat() / maxOf(w, h)
+                if (scale < 1f) decoder.setTargetSize((w * scale).toInt(), (h * scale).toInt())
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            }
+            val out = newCaptureFile(context, "jpg")
+            out.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it) }
+            bitmap.recycle()
+            if (out.length() >= media.sizeBytes) {
+                out.delete()
+                return null // not worth it
+            }
+            media.copy(
+                uri = uriFor(context, out),
+                mimeType = "image/jpeg",
+                sizeBytes = out.length(),
+                fileName = (media.fileName?.substringBeforeLast('.') ?: "photo") + ".jpg",
+            )
+        }.getOrNull()
     }
 
     private fun durationSeconds(context: Context, uri: Uri): Int? {

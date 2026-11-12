@@ -45,6 +45,8 @@ data class FeedUiState(
     val personalized: Boolean? = null,
     /** Unread messages, for the badge on the inbox button. */
     val unreadMessages: Int = 0,
+    /** When the shown posts were saved, if they come from the offline cache (requirement 22). */
+    val savedAt: Long? = null,
 )
 
 /**
@@ -161,6 +163,7 @@ class FeedViewModel(
                             isRefreshing = false,
                             endReached = page.posts.size < PAGE_SIZE,
                             personalized = page.personalized,
+                            savedAt = page.savedAt,
                         )
                     }
                 }

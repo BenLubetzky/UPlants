@@ -76,6 +76,7 @@ import coil3.compose.AsyncImage
 import com.uplants.app.R
 import com.uplants.app.data.device.PickedMedia
 import com.uplants.app.data.model.ContentTypes
+import com.uplants.app.ui.common.LocalNetworkStatus
 import com.uplants.app.ui.common.asString
 import com.uplants.app.ui.common.contentTypeIcon
 import com.uplants.app.ui.common.contentTypeLabel
@@ -248,9 +249,11 @@ fun PublishContent(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            val online = LocalNetworkStatus.current.isOnline
+            if (!online) Text(stringResource(R.string.publish_offline), color = MaterialTheme.colorScheme.error)
             Button(
                 onClick = onPublish,
-                enabled = !state.isBusy,
+                enabled = !state.isBusy && online,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             ) {
                 if (state.isPublishing) {

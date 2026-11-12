@@ -31,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -62,6 +63,7 @@ import com.uplants.app.data.model.Message
 import com.uplants.app.ui.common.EmptyBox
 import com.uplants.app.ui.common.ErrorBox
 import com.uplants.app.ui.common.LoadingBox
+import com.uplants.app.ui.common.LocalNetworkStatus
 import com.uplants.app.ui.common.PostSummaryRow
 import com.uplants.app.ui.common.UserAvatar
 import com.uplants.app.ui.common.relativeTime
@@ -203,8 +205,13 @@ fun ChatScreen(
                 if (state.isSending) {
                     CircularProgressIndicator(Modifier.size(32.dp))
                 } else {
-                    IconButton(onClick = viewModel::send, enabled = state.draft.isNotBlank()) {
-                        Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.chat_send), tint = MaterialTheme.colorScheme.primary)
+                    val canSend = state.draft.isNotBlank() && LocalNetworkStatus.current.isOnline
+                    IconButton(onClick = viewModel::send, enabled = canSend) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            stringResource(R.string.chat_send),
+                            tint = if (canSend) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                        )
                     }
                 }
             }

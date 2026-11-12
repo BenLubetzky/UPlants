@@ -1,6 +1,7 @@
 package com.uplants.app.ui.common
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -90,7 +95,23 @@ private fun SmallChip(text: String) {
 @Composable
 private fun PostPreview(post: Post) {
     val image = post.previewImageUrl
+    // Mobile data, Data Saver or a low-memory phone: don't download every image in the feed.
+    var showImage by rememberSaveable(post.id) { mutableStateOf(false) }
+    val lowFidelity = LocalNetworkStatus.current.lowFidelity
     when {
+        image != null && lowFidelity && !showImage -> Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 7f)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable { showImage = true },
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(contentTypeIcon(post.contentType), null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.tap_to_load_image), style = MaterialTheme.typography.labelMedium)
+            }
+        }
         image != null -> Box(contentAlignment = Alignment.Center) {
             AsyncImage(
                 model = image,

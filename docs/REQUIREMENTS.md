@@ -6,7 +6,7 @@ Update this file (and the summary table in the [README](../README.md#status)) wh
 **Status:** ✅ done · 🟡 partial (e.g. server ready, app screen missing) · ❌ not started
 **Deadline:** 15 December 2026 (report + GitHub link + demo video)
 
-Last updated: 2026-11-12 (app: statistics dashboard and notifications)
+Last updated: 2026-11-12 (app: optional 22-25, offline and adaptation)
 
 ## Application requirements
 
@@ -38,10 +38,10 @@ Last updated: 2026-11-12 (app: statistics dashboard and notifications)
 
 | # | Requirement | Status | Notes |
 |---|---|---|---|
-| 22 | Contents available offline | ❌ | Cache in the app (Room) |
-| 23 | Features adapt to connectivity | ❌ | Login only shows "Can't reach the server" |
-| 24 | Fidelity adapts to device and connectivity | ❌ | e.g. lower image quality on mobile data |
-| 25 | Graceful degradation when a service is down | ❌ | |
+| 22 | Contents available offline | 🟡 | App ✅: last feeds, posts, comments, profiles and categories saved (`data/offline/OfflineCache`) and shown when offline; images cached by Coil |
+| 23 | Features adapt to connectivity | 🟡 | App ✅: offline banner, fail-fast requests, actions needing the network disabled with an explanation, auto-reload when back online |
+| 24 | Fidelity adapts to device and connectivity | 🟡 | App ✅: on mobile data / Data Saver / low-RAM phones images and media load on demand and photos are compressed before upload |
+| 25 | Graceful degradation when a service is down | 🟡 | App ✅: per-service health from real requests, banner naming the affected parts, saved content as fallback; services answer 503 when Supabase is down |
 
 ## Infrastructure requirements
 

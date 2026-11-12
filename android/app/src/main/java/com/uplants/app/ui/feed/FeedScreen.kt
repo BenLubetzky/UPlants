@@ -57,6 +57,8 @@ import com.uplants.app.ui.common.EmptyBox
 import com.uplants.app.ui.common.ErrorBox
 import com.uplants.app.ui.common.LoadMoreWhenNearEnd
 import com.uplants.app.ui.common.LoadingBox
+import com.uplants.app.ui.common.LocalNetworkStatus
+import com.uplants.app.ui.common.SavedContentNote
 import com.uplants.app.ui.common.PagedListFooter
 import com.uplants.app.ui.common.PostCard
 import com.uplants.app.ui.common.asString
@@ -79,6 +81,11 @@ fun FeedScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.refreshUnread() }
+    // Back online while showing saved posts or an error: load fresh ones (requirement 23).
+    val online = LocalNetworkStatus.current.isOnline
+    LaunchedEffect(online) {
+        if (online && (state.savedAt != null || state.error != null)) viewModel.refresh()
+    }
     LaunchedEffect(deletedPostId) {
         if (deletedPostId != null) {
             viewModel.removePost(deletedPostId)
@@ -203,6 +210,7 @@ private fun PostList(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
+        state.savedAt?.let { savedAt -> item(key = "saved") { SavedContentNote(savedAt) } }
         if (state.tab == FeedTab.FOR_YOU && state.personalized == false) {
             item(key = "not-personalized") { NotPersonalizedHint(onPickInterests) }
         }

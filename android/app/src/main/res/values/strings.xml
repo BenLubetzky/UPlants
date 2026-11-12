@@ -281,4 +281,21 @@
     <!-- Notifications -->
     <string name="notification_channel">Activity</string>
     <string name="notification_channel_description">New messages, followers, posts from people you follow and activity on your posts</string>
+
+    <!-- Offline, connectivity and service status -->
+    <string name="banner_offline">You\'re offline. Showing saved content; posting, comments and messages wait until you\'re back online.</string>
+    <string name="banner_all_down">Can\'t reach the UPlants servers. Showing saved content where possible.</string>
+    <string name="banner_some_down">Temporarily unavailable: %1$s. Everything else works.</string>
+    <string name="service_users">accounts and profiles</string>
+    <string name="service_content">posts</string>
+    <string name="service_interactions">comments and ratings</string>
+    <string name="service_favorites">lists</string>
+    <string name="service_messaging">messages</string>
+    <string name="saved_content">Saved content from %1$s</string>
+    <string name="offline_action">You\'re offline. Try again when you\'re connected.</string>
+    <string name="comment_offline_hint">Offline: comments need a connection</string>
+    <string name="publish_offline">You\'re offline. Connect to publish.</string>
+    <string name="tap_to_load_image">Tap to load image (saving data)</string>
+    <string name="tap_to_load_video">Load video (saving data)</string>
+    <string name="tap_to_load_audio">Load audio (saving data)</string>
 </resources>

@@ -18,4 +18,6 @@ class DeviceServices(private val context: Context) {
 
     fun describe(uri: Uri, isLive: Boolean, fallbackMime: String? = null) =
         MediaFiles.describe(context, uri, isLive, fallbackMime)
+
+    fun compressPhoto(media: PickedMedia): PickedMedia? = MediaFiles.compressPhoto(context, media)
 }

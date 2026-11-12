@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ThumbDown
@@ -44,7 +45,9 @@ import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -57,6 +60,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -80,6 +84,8 @@ import com.uplants.app.ui.common.AuthorRow
 import com.uplants.app.ui.common.CountLabel
 import com.uplants.app.ui.common.ErrorBox
 import com.uplants.app.ui.common.LoadingBox
+import com.uplants.app.ui.common.LocalNetworkStatus
+import com.uplants.app.ui.common.SavedContentNote
 import com.uplants.app.ui.common.LoginRequiredDialog
 import com.uplants.app.ui.common.MediaPlayer
 import com.uplants.app.ui.common.PostTags
@@ -95,6 +101,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @Composable
 fun PostDetailScreen(
@@ -105,6 +112,11 @@ fun PostDetailScreen(
     viewModel: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Back online after showing saved content or an error: reload (requirement 23).
+    val online = LocalNetworkStatus.current.isOnline
+    LaunchedEffect(online) {
+        if (online && (state.post?.savedAt != null || state.error != null)) viewModel.retry()
+    }
     LaunchedEffect(state.deleted) {
         if (state.deleted) state.post?.let { onDeleted(it.id) }
     }
@@ -159,7 +171,17 @@ fun PostDetailContent(
     var openSheet by rememberSaveable { mutableStateOf<Sheet?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     // Visitors can look but not touch: every action that needs an account goes through this.
-    val requireLogin: (() -> Unit) -> Unit = { action -> if (state.isLoggedIn) action() else showLoginDialog = true }
+    // Actions need an account and a connection; offline they explain why nothing happens (requirement 23).
+    val online = LocalNetworkStatus.current.isOnline
+    val scope = rememberCoroutineScope()
+    val offlineText = stringResource(R.string.offline_action)
+    val requireLogin: (() -> Unit) -> Unit = { action ->
+        when {
+            !state.isLoggedIn -> showLoginDialog = true
+            !online -> scope.launch { snackbar.showSnackbar(offlineText) }
+            else -> action()
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
@@ -188,6 +210,7 @@ fun PostDetailContent(
             post == null -> ErrorBox(state.error ?: UiText.Res(R.string.error_server), onRetry, Modifier.padding(padding))
             else -> Column(Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize().imePadding()) {
                 LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
+                    post.savedAt?.let { savedAt -> item(key = "saved") { SavedContentNote(savedAt) } }
                     item(key = "post") {
                         PostBody(
                             post = post,
@@ -239,7 +262,7 @@ fun PostDetailContent(
                 }
                 HorizontalDivider()
                 if (state.isLoggedIn) {
-                    CommentInput(state.commentDraft, state.isSendingComment, onCommentDraftChange, onSendComment)
+                    CommentInput(state.commentDraft, state.isSendingComment, online, onCommentDraftChange, onSendComment)
                 } else {
                     TextButton(onClick = onRequestLogin, modifier = Modifier.fillMaxWidth().padding(8.dp)) {
                         Text(stringResource(R.string.comments_login_to_comment))
@@ -346,8 +369,23 @@ private fun PostMedia(post: Post) {
             contentScale = ContentScale.FillWidth,
             modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp).background(MaterialTheme.colorScheme.surfaceVariant),
         )
-        ContentTypes.VIDEO -> MediaPlayer(url, isAudio = false)
-        ContentTypes.AUDIO -> MediaPlayer(url, isAudio = true, modifier = Modifier.padding(horizontal = 16.dp))
+        ContentTypes.VIDEO, ContentTypes.AUDIO -> {
+            // On a light connection the player only starts downloading when asked (requirement 24).
+            val lowFidelity = LocalNetworkStatus.current.lowFidelity
+            var load by rememberSaveable(post.id) { mutableStateOf(false) }
+            val isAudio = post.contentType == ContentTypes.AUDIO
+            if (lowFidelity && !load) {
+                OutlinedButton(onClick = { load = true }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    Icon(Icons.Filled.PlayArrow, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(if (isAudio) R.string.tap_to_load_audio else R.string.tap_to_load_video))
+                }
+            } else if (isAudio) {
+                MediaPlayer(url, isAudio = true, modifier = Modifier.padding(horizontal = 16.dp))
+            } else {
+                MediaPlayer(url, isAudio = false)
+            }
+        }
     }
 }
 
@@ -505,22 +543,27 @@ private fun CommentItem(comment: Comment, canDelete: Boolean, onDelete: () -> Un
 }
 
 @Composable
-private fun CommentInput(draft: String, isSending: Boolean, onChange: (String) -> Unit, onSend: () -> Unit) {
+private fun CommentInput(draft: String, isSending: Boolean, online: Boolean, onChange: (String) -> Unit, onSend: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
             value = draft,
             onValueChange = onChange,
-            placeholder = { Text(stringResource(R.string.comment_hint)) },
+            placeholder = { Text(stringResource(if (online) R.string.comment_hint else R.string.comment_offline_hint)) },
             maxLines = 4,
-            enabled = !isSending,
+            enabled = !isSending && online,
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))
         if (isSending) {
             CircularProgressIndicator(Modifier.size(32.dp))
         } else {
-            IconButton(onClick = onSend, enabled = draft.isNotBlank()) {
-                Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.comment_send), tint = MaterialTheme.colorScheme.primary)
+            IconButton(onClick = onSend, enabled = draft.isNotBlank() && online) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Send,
+                    stringResource(R.string.comment_send),
+                    // Grey when it can't be used (empty or offline), green when it can.
+                    tint = if (draft.isNotBlank() && online) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                )
             }
         }
     }

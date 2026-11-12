@@ -4,6 +4,7 @@ import com.uplants.app.data.model.Category
 import com.uplants.app.data.model.Profile
 import com.uplants.app.data.model.UserPage
 import com.uplants.app.data.network.apiCall
+import com.uplants.app.data.offline.OfflineCache
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
@@ -57,14 +58,15 @@ data class UpdateProfileRequest(
 @Serializable
 data class InterestsRequest(@SerialName("category_ids") val categoryIds: List<Int>)
 
-class UsersRepository(private val api: UsersApi) {
+class UsersRepository(private val api: UsersApi, private val cache: OfflineCache) {
 
     /** Users whose username or display name contains [query] (1-50 characters). */
     suspend fun search(query: String, limit: Int = 20, offset: Int = 0): Result<UserPage> =
         apiCall { api.search(query.trim().take(50), limit, offset) }
 
     /** With a token, [Profile.isFollowing] says whether the logged-in user follows them. */
-    suspend fun profile(id: String): Result<Profile> = apiCall { api.profile(id) }
+    suspend fun profile(id: String): Result<Profile> =
+        cache.withFallback("profile|$id", Profile.serializer()) { apiCall { api.profile(id) } }
 
     suspend fun updateMe(displayName: String, bio: String): Result<Profile> =
         apiCall { api.updateMe(UpdateProfileRequest(displayName.trim(), bio.trim())) }

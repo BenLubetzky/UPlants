@@ -7,6 +7,8 @@ import com.uplants.app.data.device.PickedMedia
 import com.uplants.app.data.model.NewPost
 import com.uplants.app.data.network.apiCall
 import android.content.ContentResolver
+import com.uplants.app.data.offline.OfflineCache
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -63,7 +65,13 @@ data class PostFilter(
     val sort: PostSort = PostSort.RECENT,
 )
 
-class ContentRepository(private val api: ContentApi, private val resolver: ContentResolver) {
+class ContentRepository(
+    private val api: ContentApi,
+    private val resolver: ContentResolver,
+    private val cache: OfflineCache,
+    /** Feeds are per user; cached pages must not leak between accounts. */
+    private val currentUserId: () -> String?,
+) {
 
     private val json = Json { explicitNulls = false }
 
@@ -71,9 +79,13 @@ class ContentRepository(private val api: ContentApi, private val resolver: Conte
 
     suspend fun categories(): Result<List<Category>> =
         cachedCategories?.let { Result.success(it) }
-            ?: apiCall { api.categories() }.onSuccess { cachedCategories = it }
+            ?: cache.withFallback("categories", ListSerializer(Category.serializer())) { apiCall { api.categories() } }
+                .onSuccess { cachedCategories = it }
 
-    suspend fun posts(filter: PostFilter, limit: Int, offset: Int): Result<PostPage> = apiCall {
+    suspend fun posts(filter: PostFilter, limit: Int, offset: Int): Result<PostPage> =
+        cache.withFallback("posts|$filter|$limit|$offset", PostPage.serializer(), ::markPage) { fetchPosts(filter, limit, offset) }
+
+    private suspend fun fetchPosts(filter: PostFilter, limit: Int, offset: Int): Result<PostPage> = apiCall {
         api.posts(
             query = filter.query?.takeIf { it.isNotBlank() },
             type = filter.type,
@@ -86,9 +98,13 @@ class ContentRepository(private val api: ContentApi, private val resolver: Conte
     }
 
     /** Personalised feed; needs login. */
-    suspend fun feed(limit: Int, offset: Int): Result<PostPage> = apiCall { api.feed(limit, offset) }
+    suspend fun feed(limit: Int, offset: Int): Result<PostPage> =
+        cache.withFallback("feed|${currentUserId()}|$limit|$offset", PostPage.serializer(), ::markPage) { apiCall { api.feed(limit, offset) } }
 
-    suspend fun post(id: String): Result<Post> = apiCall { api.post(id) }
+    suspend fun post(id: String): Result<Post> =
+        cache.withFallback("post|$id", Post.serializer(), { p, at -> p.copy(savedAt = at) }) { apiCall { api.post(id) } }
+
+    private fun markPage(page: PostPage, savedAt: Long) = page.copy(savedAt = savedAt)
 
     suspend fun deletePost(id: String): Result<Unit> = apiCall { api.deletePost(id) }
 

@@ -17,6 +17,11 @@ import com.uplants.app.data.interactions.InteractionsRepository
 import com.uplants.app.data.messaging.MessagingApi
 import com.uplants.app.data.messaging.MessagingRepository
 import com.uplants.app.data.network.AuthInterceptor
+import com.uplants.app.data.network.NetworkMonitor
+import com.uplants.app.data.network.OfflineInterceptor
+import com.uplants.app.data.network.ServiceHealth
+import com.uplants.app.data.network.ServiceHealthInterceptor
+import com.uplants.app.data.offline.OfflineCache
 import com.uplants.app.data.notifications.ActivityChecker
 import com.uplants.app.data.notifications.DeepLink
 import com.uplants.app.data.notifications.NotificationScheduler
@@ -35,6 +40,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /** Manual dependency injection: creates the app's singletons once, in [UPlantsApplication]. */
@@ -54,9 +60,16 @@ class AppContainer(context: Context) {
         redactHeader(AuthInterceptor.AUTHORIZATION)
     }
 
+    // Requirements 22-25: connectivity, which services are down, saved content.
+    val networkMonitor = NetworkMonitor(appContext)
+    val serviceHealth = ServiceHealth()
+    val offlineCache = OfflineCache(File(appContext.filesDir, "offline"))
+
     /** No auth: used for login, register and refreshing tokens. */
     private val plainClient: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
+        .addInterceptor(OfflineInterceptor(networkMonitor))
+        .addInterceptor(ServiceHealthInterceptor(serviceHealth))
         .addInterceptor(logging)
         .build()
 
@@ -89,11 +102,11 @@ class AppContainer(context: Context) {
     val authRepository: AuthRepository =
         if (BuildConfig.USE_FAKE_BACKEND) FakeAuthRepository(sessions) else NetworkAuthRepository(authApi, sessions)
 
-    val contentRepository by lazy { ContentRepository(service<ContentApi>(ServiceUrls.content), appContext.contentResolver) }
-    val interactionsRepository by lazy { InteractionsRepository(service<InteractionsApi>(ServiceUrls.interactions)) }
+    val contentRepository by lazy { ContentRepository(service<ContentApi>(ServiceUrls.content), appContext.contentResolver, offlineCache) { sessions.current()?.userId } }
+    val interactionsRepository by lazy { InteractionsRepository(service<InteractionsApi>(ServiceUrls.interactions), offlineCache) }
     val favoritesRepository by lazy { FavoritesRepository(service<FavoritesApi>(ServiceUrls.favorites)) }
     val messagingRepository by lazy { MessagingRepository(service<MessagingApi>(ServiceUrls.messaging)) }
-    val usersRepository by lazy { UsersRepository(service<UsersApi>(ServiceUrls.users)) }
+    val usersRepository by lazy { UsersRepository(service<UsersApi>(ServiceUrls.users), offlineCache) }
 
     val device by lazy { DeviceServices(appContext) }
 

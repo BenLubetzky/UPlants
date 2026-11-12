@@ -9,7 +9,7 @@ import java.io.IOException
 
 /** Why a call to a service failed, in terms the UI can act on. */
 enum class ApiErrorKind {
-    /** No connection to the service at all (offline, or the container isn't running). */
+    /** The device has no connection. */
     OFFLINE,
     /** 401: not logged in, or the session expired. */
     UNAUTHORIZED,
@@ -20,7 +20,7 @@ enum class ApiErrorKind {
     CONFLICT,
     /** 400: the service explains what's wrong in [ApiException.serverMessage]. */
     BAD_REQUEST,
-    /** 502/503: the service is up but the database isn't reachable. */
+    /** The service didn't answer (container stopped, PC off) or answered 502/503: that part of the app is down. */
     UNAVAILABLE,
     UNKNOWN,
 }
@@ -57,7 +57,9 @@ suspend fun <T> apiCall(block: suspend () -> T): Result<T> =
         }
         Result.failure(ApiException(kind, message, e))
     } catch (e: IOException) {
-        Result.failure(ApiException(ApiErrorKind.OFFLINE, cause = e))
+        // The device is online but the service didn't answer: that service is down, not the connection.
+        val kind = if (e is DeviceOfflineException) ApiErrorKind.OFFLINE else ApiErrorKind.UNAVAILABLE
+        Result.failure(ApiException(kind, cause = e))
     } catch (e: SerializationException) {
         Result.failure(ApiException(ApiErrorKind.UNKNOWN, cause = e))
     }

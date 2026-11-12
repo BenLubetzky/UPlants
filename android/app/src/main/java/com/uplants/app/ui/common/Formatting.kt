@@ -12,6 +12,12 @@ fun relativeTime(iso: String, now: Long = System.currentTimeMillis()): String {
         .toString()
 }
 
+/** Same as [relativeTime] for an epoch-millis timestamp. */
+fun relativeTimeMillis(millis: Long, now: Long = System.currentTimeMillis()): String {
+    if (now - millis < DateUtils.MINUTE_IN_MILLIS) return "just now"
+    return DateUtils.getRelativeTimeSpanString(millis, now, DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE).toString()
+}
+
 /** 999 → "999", 1200 → "1.2K", 3400000 → "3.4M". */
 fun compactCount(value: Int): String = when {
     value < 1_000 -> value.toString()

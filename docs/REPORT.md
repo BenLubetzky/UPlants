@@ -323,7 +323,12 @@ Full endpoint references are in each service's README; below is the design summa
   the last one it saw: new messages, new followers, new posts by people you follow (the "new contents" of the brief) and
   new likes / comments on your posts. A WorkManager job runs every 15 minutes, also with the app closed, plus once each
   time the app comes to the foreground; system notifications open the matching chat, profile or post when tapped.
-- **Next**: the optional offline cache and connectivity handling.
+- **Offline and adaptation (optional 22–25)**: the last answers (feeds, posts, comments, profiles) are saved on the
+  device and shown, marked as saved, when there is no connection or a service is down. The app follows the connection:
+  offline it says so, disables actions that need the network and reloads when the connection returns. On mobile data,
+  Data Saver or low-memory phones it loads images and media on demand and shrinks photos before upload. It learns from
+  real requests which services aren't answering and tells the user exactly which parts are affected, while the rest
+  keeps working.
   favourite lists, messages, dashboard, then the optional offline cache and connectivity handling.
 
 ---

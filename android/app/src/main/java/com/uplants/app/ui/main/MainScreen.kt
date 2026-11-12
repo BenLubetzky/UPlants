@@ -1,7 +1,9 @@
 package com.uplants.app.ui.main
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -18,6 +20,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,6 +53,8 @@ import com.uplants.app.ui.dashboard.PostStatsScreen
 import com.uplants.app.ui.navigation.DashboardRoute
 import com.uplants.app.ui.navigation.PostStatsRoute
 import com.uplants.app.ui.account.AccountScreen
+import com.uplants.app.ui.common.ConnectionBanner
+import com.uplants.app.ui.common.LocalNetworkStatus
 import com.uplants.app.ui.feed.FeedScreen
 import com.uplants.app.ui.lists.ListDetailScreen
 import com.uplants.app.ui.lists.MyListsScreen
@@ -122,6 +127,8 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
     val openInbox: () -> Unit = { navController.navigate(InboxRoute) }
     val openChat: (String, String) -> Unit = { id, name -> navController.navigate(ChatRoute(id, name)) }
     val openDashboard: () -> Unit = { navController.navigate(DashboardRoute) }
+    val networkStatus by container.networkMonitor.status.collectAsStateWithLifecycle()
+    val servicesDown by container.serviceHealth.down.collectAsStateWithLifecycle()
 
     // Opened from a notification: go to the post / chat / profile it is about (registered users only).
     // Lifecycle-aware, so only the visible screen handles it.
@@ -149,182 +156,192 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
         // Each screen draws its own top bar; this Scaffold only adds the bottom bar.
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    topLevelDestinations.forEach { item ->
-                        val selected = destination?.hasRoute(item.routeClass) == true
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = { navController.navigateToTab(item.route) },
-                            icon = { Icon(if (selected) item.selectedIcon else item.icon, null) },
-                            label = { Text(stringResource(item.label)) },
-                        )
+            Column {
+                // Offline / service-down banner (requirements 23, 25). Without the navigation bar it needs the inset itself.
+                ConnectionBanner(
+                    networkStatus,
+                    servicesDown,
+                    if (showBottomBar) Modifier else Modifier.navigationBarsPadding(),
+                )
+                if (showBottomBar) {
+                    NavigationBar {
+                        topLevelDestinations.forEach { item ->
+                            val selected = destination?.hasRoute(item.routeClass) == true
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = { navController.navigateToTab(item.route) },
+                                icon = { Icon(if (selected) item.selectedIcon else item.icon, null) },
+                                label = { Text(stringResource(item.label)) },
+                            )
+                        }
                     }
                 }
             }
         },
     ) { padding ->
-        NavHost(navController, startDestination = FeedRoute, modifier = Modifier.padding(padding)) {
-            composable<FeedRoute> { entry ->
-                val changes = rememberPostChanges(entry)
-                val needsRefresh by entry.savedStateHandle.getStateFlow(FEED_NEEDS_REFRESH_KEY, false).collectAsState()
-                FeedScreen(
-                    isLoggedIn = isLoggedIn,
-                    onOpenPost = openPost,
-                    onOpenProfile = openProfile,
-                    onPickInterests = openInterests,
-                    onOpenInbox = openInbox,
-                    deletedPostId = changes.deleted,
-                    onDeletedPostHandled = { entry.savedStateHandle[DELETED_POST_ID_KEY] = null },
-                    refreshRequested = needsRefresh,
-                    onRefreshHandled = { entry.savedStateHandle[FEED_NEEDS_REFRESH_KEY] = false },
-                    viewedPostId = changes.viewed,
-                    onViewedPostHandled = { entry.savedStateHandle[VIEWED_POST_ID_KEY] = null },
-                )
-            }
-            composable<SearchRoute> { entry ->
-                val changes = rememberPostChanges(entry)
-                SearchScreen(
-                    onOpenPost = openPost,
-                    onOpenProfile = openProfile,
-                    viewedPostId = changes.viewed,
-                    deletedPostId = changes.deleted,
-                    onPostChangesHandled = changes.clear,
-                )
-            }
-            composable<PublishRoute> {
-                if (isLoggedIn) {
-                    PublishScreen(onPublished = { postId ->
-                        // Show the new post; Back goes to the (refreshed) feed, and the form starts empty next time.
-                        navController.getBackStackEntry<FeedRoute>().savedStateHandle[FEED_NEEDS_REFRESH_KEY] = true
-                        navController.navigate(PostDetailRoute(postId)) {
-                            popUpTo<FeedRoute>()
-                        }
-                    })
-                } else {
-                    GuestPublishPrompt(onLogin = onSignOut)
-                }
-            }
-            composable<AccountRoute> { entry ->
-                if (userId != null) {
-                    val changes = rememberPostChanges(entry)
-                    ProfileScreen(
-                        userId = userId,
-                        onBack = null,
-                        onOpenPost = openPost,
-                        onOpenFollowList = openFollowList,
-                        onEditInterests = openInterests,
-                        onOpenMyLists = openMyLists,
-                        onOpenList = openList,
-                        onMessage = openChat,
-                        onOpenDashboard = openDashboard,
-                        onSignOut = onSignOut,
-                        onRequestLogin = onSignOut,
-                        viewedPostId = changes.viewed,
-                        deletedPostId = changes.deleted,
-                        onPostChangesHandled = changes.clear,
-                    )
-                } else {
-                    AccountScreen(username = username, onSignOut = onSignOut)
-                }
-            }
-            composable<ProfileRoute> { entry ->
-                val changes = rememberPostChanges(entry)
-                ProfileScreen(
-                    userId = entry.toRoute<ProfileRoute>().userId,
-                    onBack = { navController.popBackStack() },
-                    onOpenPost = openPost,
-                    onOpenFollowList = openFollowList,
-                    onEditInterests = openInterests,
-                    onOpenMyLists = openMyLists,
-                    onOpenList = openList,
-                    onMessage = openChat,
-                    onOpenDashboard = openDashboard,
-                    onSignOut = onSignOut,
-                    onRequestLogin = onSignOut,
-                    viewedPostId = changes.viewed,
-                    deletedPostId = changes.deleted,
-                    onPostChangesHandled = changes.clear,
-                )
-            }
-            composable<FollowListRoute> { entry ->
-                val route = entry.toRoute<FollowListRoute>()
-                FollowListScreen(
-                    userId = route.userId,
-                    followers = route.followers,
-                    onBack = { navController.popBackStack() },
-                    onOpenProfile = openProfile,
-                )
-            }
-            composable<InterestsRoute> {
-                InterestsScreen(
-                    onBack = { navController.popBackStack() },
-                    onSaved = {
-                        // New interests change the personalised feed.
-                        runCatching { navController.getBackStackEntry<FeedRoute>().savedStateHandle[FEED_NEEDS_REFRESH_KEY] = true }
-                        navController.popBackStack()
-                    },
-                )
-            }
-            composable<MyListsRoute> {
-                MyListsScreen(onBack = { navController.popBackStack() }, onOpenList = openList)
-            }
-            composable<ListDetailRoute> { entry ->
-                ListDetailScreen(
-                    listId = entry.toRoute<ListDetailRoute>().listId,
-                    onBack = { navController.popBackStack() },
-                    onOpenPost = openPost,
-                    onOpenProfile = openProfile,
-                )
-            }
-            composable<InboxRoute> {
-                InboxScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
-            }
-            composable<ChatRoute> { entry ->
-                val route = entry.toRoute<ChatRoute>()
-                ChatScreen(
-                    userId = route.userId,
-                    name = route.name,
-                    onBack = { navController.popBackStack() },
-                    onOpenProfile = openProfile,
-                    onOpenPost = openPost,
-                )
-            }
-            composable<DashboardRoute> {
-                if (userId != null) {
-                    DashboardScreen(
-                        userId = userId,
-                        onBack = { navController.popBackStack() },
-                        onOpenPostStats = { id, title -> navController.navigate(PostStatsRoute(id, title)) },
-                    )
-                }
-            }
-            composable<PostStatsRoute> { entry ->
-                val route = entry.toRoute<PostStatsRoute>()
-                PostStatsScreen(
-                    postId = route.postId,
-                    title = route.title,
-                    onBack = { navController.popBackStack() },
-                    onOpenPost = openPost,
-                )
-            }
-            composable<PostDetailRoute> { entry ->
-                val postId = entry.toRoute<PostDetailRoute>().postId
-                // Whatever happens here (likes, comments, views), the screen below refreshes this post on return.
-                val screenBelow = remember(entry) { navController.previousBackStackEntry }
-                DisposableEffect(postId) {
-                    onDispose { screenBelow?.savedStateHandle?.set(VIEWED_POST_ID_KEY, postId) }
-                }
-                PostDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onDeleted = { deletedId ->
-                        navController.previousBackStackEntry?.savedStateHandle?.set(DELETED_POST_ID_KEY, deletedId)
-                        navController.popBackStack()
-                    },
-                    onRequestLogin = onSignOut,
-                    onOpenProfile = openProfile,
-                )
-            }
+        CompositionLocalProvider(LocalNetworkStatus provides networkStatus) {
+          NavHost(navController, startDestination = FeedRoute, modifier = Modifier.padding(padding)) {
+              composable<FeedRoute> { entry ->
+                  val changes = rememberPostChanges(entry)
+                  val needsRefresh by entry.savedStateHandle.getStateFlow(FEED_NEEDS_REFRESH_KEY, false).collectAsState()
+                  FeedScreen(
+                      isLoggedIn = isLoggedIn,
+                      onOpenPost = openPost,
+                      onOpenProfile = openProfile,
+                      onPickInterests = openInterests,
+                      onOpenInbox = openInbox,
+                      deletedPostId = changes.deleted,
+                      onDeletedPostHandled = { entry.savedStateHandle[DELETED_POST_ID_KEY] = null },
+                      refreshRequested = needsRefresh,
+                      onRefreshHandled = { entry.savedStateHandle[FEED_NEEDS_REFRESH_KEY] = false },
+                      viewedPostId = changes.viewed,
+                      onViewedPostHandled = { entry.savedStateHandle[VIEWED_POST_ID_KEY] = null },
+                  )
+              }
+              composable<SearchRoute> { entry ->
+                  val changes = rememberPostChanges(entry)
+                  SearchScreen(
+                      onOpenPost = openPost,
+                      onOpenProfile = openProfile,
+                      viewedPostId = changes.viewed,
+                      deletedPostId = changes.deleted,
+                      onPostChangesHandled = changes.clear,
+                  )
+              }
+              composable<PublishRoute> {
+                  if (isLoggedIn) {
+                      PublishScreen(onPublished = { postId ->
+                          // Show the new post; Back goes to the (refreshed) feed, and the form starts empty next time.
+                          navController.getBackStackEntry<FeedRoute>().savedStateHandle[FEED_NEEDS_REFRESH_KEY] = true
+                          navController.navigate(PostDetailRoute(postId)) {
+                              popUpTo<FeedRoute>()
+                          }
+                      })
+                  } else {
+                      GuestPublishPrompt(onLogin = onSignOut)
+                  }
+              }
+              composable<AccountRoute> { entry ->
+                  if (userId != null) {
+                      val changes = rememberPostChanges(entry)
+                      ProfileScreen(
+                          userId = userId,
+                          onBack = null,
+                          onOpenPost = openPost,
+                          onOpenFollowList = openFollowList,
+                          onEditInterests = openInterests,
+                          onOpenMyLists = openMyLists,
+                          onOpenList = openList,
+                          onMessage = openChat,
+                          onOpenDashboard = openDashboard,
+                          onSignOut = onSignOut,
+                          onRequestLogin = onSignOut,
+                          viewedPostId = changes.viewed,
+                          deletedPostId = changes.deleted,
+                          onPostChangesHandled = changes.clear,
+                      )
+                  } else {
+                      AccountScreen(username = username, onSignOut = onSignOut)
+                  }
+              }
+              composable<ProfileRoute> { entry ->
+                  val changes = rememberPostChanges(entry)
+                  ProfileScreen(
+                      userId = entry.toRoute<ProfileRoute>().userId,
+                      onBack = { navController.popBackStack() },
+                      onOpenPost = openPost,
+                      onOpenFollowList = openFollowList,
+                      onEditInterests = openInterests,
+                      onOpenMyLists = openMyLists,
+                      onOpenList = openList,
+                      onMessage = openChat,
+                      onOpenDashboard = openDashboard,
+                      onSignOut = onSignOut,
+                      onRequestLogin = onSignOut,
+                      viewedPostId = changes.viewed,
+                      deletedPostId = changes.deleted,
+                      onPostChangesHandled = changes.clear,
+                  )
+              }
+              composable<FollowListRoute> { entry ->
+                  val route = entry.toRoute<FollowListRoute>()
+                  FollowListScreen(
+                      userId = route.userId,
+                      followers = route.followers,
+                      onBack = { navController.popBackStack() },
+                      onOpenProfile = openProfile,
+                  )
+              }
+              composable<InterestsRoute> {
+                  InterestsScreen(
+                      onBack = { navController.popBackStack() },
+                      onSaved = {
+                          // New interests change the personalised feed.
+                          runCatching { navController.getBackStackEntry<FeedRoute>().savedStateHandle[FEED_NEEDS_REFRESH_KEY] = true }
+                          navController.popBackStack()
+                      },
+                  )
+              }
+              composable<MyListsRoute> {
+                  MyListsScreen(onBack = { navController.popBackStack() }, onOpenList = openList)
+              }
+              composable<ListDetailRoute> { entry ->
+                  ListDetailScreen(
+                      listId = entry.toRoute<ListDetailRoute>().listId,
+                      onBack = { navController.popBackStack() },
+                      onOpenPost = openPost,
+                      onOpenProfile = openProfile,
+                  )
+              }
+              composable<InboxRoute> {
+                  InboxScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
+              }
+              composable<ChatRoute> { entry ->
+                  val route = entry.toRoute<ChatRoute>()
+                  ChatScreen(
+                      userId = route.userId,
+                      name = route.name,
+                      onBack = { navController.popBackStack() },
+                      onOpenProfile = openProfile,
+                      onOpenPost = openPost,
+                  )
+              }
+              composable<DashboardRoute> {
+                  if (userId != null) {
+                      DashboardScreen(
+                          userId = userId,
+                          onBack = { navController.popBackStack() },
+                          onOpenPostStats = { id, title -> navController.navigate(PostStatsRoute(id, title)) },
+                      )
+                  }
+              }
+              composable<PostStatsRoute> { entry ->
+                  val route = entry.toRoute<PostStatsRoute>()
+                  PostStatsScreen(
+                      postId = route.postId,
+                      title = route.title,
+                      onBack = { navController.popBackStack() },
+                      onOpenPost = openPost,
+                  )
+              }
+              composable<PostDetailRoute> { entry ->
+                  val postId = entry.toRoute<PostDetailRoute>().postId
+                  // Whatever happens here (likes, comments, views), the screen below refreshes this post on return.
+                  val screenBelow = remember(entry) { navController.previousBackStackEntry }
+                  DisposableEffect(postId) {
+                      onDispose { screenBelow?.savedStateHandle?.set(VIEWED_POST_ID_KEY, postId) }
+                  }
+                  PostDetailScreen(
+                      onBack = { navController.popBackStack() },
+                      onDeleted = { deletedId ->
+                          navController.previousBackStackEntry?.savedStateHandle?.set(DELETED_POST_ID_KEY, deletedId)
+                          navController.popBackStack()
+                      },
+                      onRequestLogin = onSignOut,
+                      onOpenProfile = openProfile,
+                  )
+              }
+          }
         }
     }
 }

@@ -7,7 +7,7 @@ Built so far: login / sign up / continue as guest, the **feed** (For you + Explo
 **profiles** (yours and others': description, counters, posts, follow / unfollow, followers / following, edit profile,
 interests), **search** (posts and people), **favourite lists** (create, rename, public/private, delete, remove posts;
 others' public lists on their profile) **messages** (inbox with unread badge, chat, shared posts), a **statistics dashboard** for your posts and
-**notifications**.
+**notifications**, plus the optional **offline mode, connectivity / device adaptation and graceful degradation**.
 
 Toolchain: Android Studio 2026.2+, AGP 9.4, Gradle 9.8 (via `gradlew`), Kotlin 2.4, compile SDK 37, target SDK 36 (37 would block emulator → PC traffic, see `app/build.gradle.kts`), min SDK 26.
 
@@ -45,7 +45,9 @@ How requests work ([`AppContainer.kt`](app/src/main/java/com/uplants/app/AppCont
 app/src/main/java/com/uplants/app/
 ├── MainActivity.kt, UPlantsApplication.kt, AppContainer.kt   # entry point + manual DI
 ├── data/
-│   ├── network/      # service URLs, auth interceptor, token refresh, apiCall error mapping
+│   ├── network/      # service URLs, auth interceptor, token refresh, apiCall error mapping,
+│   │                 # NetworkMonitor (online / metered / Data Saver / low RAM), ServiceHealth
+│   ├── offline/      # OfflineCache: last answers saved as JSON for offline use
 │   ├── model/        # JSON models shared by the services (Post, Comment, UserSummary, ...)
 │   ├── auth/         # login/register (network + fake), SessionStore (DataStore), SessionManager
 │   ├── content/      # content-service: feed, posts, categories
@@ -100,6 +102,23 @@ after login. When a notifications-service exists, only `ActivityChecker` needs t
 
 Testing tip: the 15-minute job can't be forced early (WorkManager refuses); put the app in the background, cause
 some activity with another account, then bring the app back to the foreground to run a check.
+
+## Offline, connectivity and degradation (optional requirements 22–25)
+
+- **Offline content (22)**: the last feeds, posts, comments, profiles and categories are saved as JSON files
+  (`data/offline/OfflineCache`); images are cached by Coil. When the device is offline or a service is down, screens show
+  the saved version with a "Saved content from …" note. The cache is cleared on log out.
+- **Adapt to connectivity (23)**: `NetworkMonitor` follows the connection. Offline, requests fail at once (no waiting for
+  timeouts), a banner says so, and publishing, commenting, liking and sending messages are disabled with an explanation.
+  When the connection returns, the feed and the open post reload by themselves.
+- **Fidelity (24)**: on mobile data, with Data Saver, or on a low-memory phone, feed images load only when tapped, video
+  and audio wait for "Load", and photos are shrunk (max 1600 px, JPEG 80) before upload. Big photos are always shrunk.
+- **Graceful degradation (25)**: `ServiceHealth` learns from real requests which services aren't answering and the banner
+  names only the affected parts ("Temporarily unavailable: messages. Everything else works."); those screens fall back to
+  saved content where possible, and the banner clears on the next good answer.
+
+Testing on the emulator: `adb shell cmd connectivity airplane-mode enable|disable` (offline), `adb shell svc wifi
+disable|enable` (mobile data = metered), `docker compose stop|start messaging-service` (one service down).
 
 ## Publishing and device hardware
 

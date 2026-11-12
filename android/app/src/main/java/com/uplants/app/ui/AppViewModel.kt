@@ -9,6 +9,7 @@ import com.uplants.app.data.auth.AuthRepository
 import com.uplants.app.data.auth.Session
 import com.uplants.app.data.notifications.ActivityChecker
 import com.uplants.app.data.notifications.NotificationScheduler
+import com.uplants.app.data.offline.OfflineCache
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ class AppViewModel(
     private val authRepository: AuthRepository,
     private val scheduler: NotificationScheduler,
     private val activityChecker: ActivityChecker,
+    private val offlineCache: OfflineCache,
 ) : ViewModel() {
 
     private val isGuest = MutableStateFlow(false)
@@ -53,6 +55,7 @@ class AppViewModel(
         scheduler.cancel()
         viewModelScope.launch {
             activityChecker.reset()
+            offlineCache.clear() // saved content belongs to the account that logged out
             authRepository.logout()
         }
     }
@@ -67,7 +70,7 @@ class AppViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val container = appContainer
-                AppViewModel(container.authRepository, container.notificationScheduler, container.activityChecker)
+                AppViewModel(container.authRepository, container.notificationScheduler, container.activityChecker, container.offlineCache)
             }
         }
     }
