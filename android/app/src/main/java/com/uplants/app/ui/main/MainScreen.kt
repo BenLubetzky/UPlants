@@ -33,8 +33,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.toRoute
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.uplants.app.AppContainer
 import com.uplants.app.R
+import com.uplants.app.UPlantsApplication
+import com.uplants.app.data.notifications.DeepLink
+import com.uplants.app.ui.dashboard.DashboardScreen
+import com.uplants.app.ui.dashboard.PostStatsScreen
+import com.uplants.app.ui.navigation.DashboardRoute
+import com.uplants.app.ui.navigation.PostStatsRoute
 import com.uplants.app.ui.account.AccountScreen
 import com.uplants.app.ui.feed.FeedScreen
 import com.uplants.app.ui.lists.ListDetailScreen
@@ -90,6 +104,7 @@ private val topLevelDestinations = listOf(
  */
 @Composable
 fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
+    val container = appContainer()
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
@@ -106,6 +121,29 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
     val openList: (String) -> Unit = { navController.navigate(ListDetailRoute(it)) }
     val openInbox: () -> Unit = { navController.navigate(InboxRoute) }
     val openChat: (String, String) -> Unit = { id, name -> navController.navigate(ChatRoute(id, name)) }
+    val openDashboard: () -> Unit = { navController.navigate(DashboardRoute) }
+
+    // Opened from a notification: go to the post / chat / profile it is about (registered users only).
+    // Lifecycle-aware, so only the visible screen handles it.
+    val pendingLink by container.pendingDeepLink.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingLink) {
+        val link = pendingLink ?: return@LaunchedEffect
+        container.pendingDeepLink.value = null
+        if (!isLoggedIn) return@LaunchedEffect
+        when (link) {
+            is DeepLink.Post -> openPost(link.postId)
+            is DeepLink.Chat -> openChat(link.userId, link.name)
+            is DeepLink.Profile -> openProfile(link.userId)
+        }
+    }
+
+    // Android 13+: ask once for permission to show notifications.
+    if (isLoggedIn && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+        LaunchedEffect(Unit) {
+            if (!container.notifier.canNotify()) askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     Scaffold(
         // Each screen draws its own top bar; this Scaffold only adds the bottom bar.
@@ -179,6 +217,7 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
                         onOpenMyLists = openMyLists,
                         onOpenList = openList,
                         onMessage = openChat,
+                        onOpenDashboard = openDashboard,
                         onSignOut = onSignOut,
                         onRequestLogin = onSignOut,
                         viewedPostId = changes.viewed,
@@ -200,6 +239,7 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
                     onOpenMyLists = openMyLists,
                     onOpenList = openList,
                     onMessage = openChat,
+                    onOpenDashboard = openDashboard,
                     onSignOut = onSignOut,
                     onRequestLogin = onSignOut,
                     viewedPostId = changes.viewed,
@@ -250,6 +290,24 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
                     onOpenPost = openPost,
                 )
             }
+            composable<DashboardRoute> {
+                if (userId != null) {
+                    DashboardScreen(
+                        userId = userId,
+                        onBack = { navController.popBackStack() },
+                        onOpenPostStats = { id, title -> navController.navigate(PostStatsRoute(id, title)) },
+                    )
+                }
+            }
+            composable<PostStatsRoute> { entry ->
+                val route = entry.toRoute<PostStatsRoute>()
+                PostStatsScreen(
+                    postId = route.postId,
+                    title = route.title,
+                    onBack = { navController.popBackStack() },
+                    onOpenPost = openPost,
+                )
+            }
             composable<PostDetailRoute> { entry ->
                 val postId = entry.toRoute<PostDetailRoute>().postId
                 // Whatever happens here (likes, comments, views), the screen below refreshes this post on return.
@@ -270,6 +328,9 @@ fun MainScreen(username: String?, userId: String?, onSignOut: () -> Unit) {
         }
     }
 }
+
+@Composable
+private fun appContainer(): AppContainer = (LocalContext.current.applicationContext as UPlantsApplication).container
 
 /** A post this screen showed was viewed (counters may have changed) or deleted on its detail screen. */
 private class PostChanges(val viewed: String?, val deleted: String?, val clear: () -> Unit)

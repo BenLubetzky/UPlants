@@ -17,6 +17,10 @@ import com.uplants.app.data.interactions.InteractionsRepository
 import com.uplants.app.data.messaging.MessagingApi
 import com.uplants.app.data.messaging.MessagingRepository
 import com.uplants.app.data.network.AuthInterceptor
+import com.uplants.app.data.notifications.ActivityChecker
+import com.uplants.app.data.notifications.DeepLink
+import com.uplants.app.data.notifications.NotificationScheduler
+import com.uplants.app.data.notifications.Notifier
 import com.uplants.app.data.network.ServiceUrls
 import com.uplants.app.data.network.TokenAuthenticator
 import com.uplants.app.data.users.UsersApi
@@ -24,6 +28,7 @@ import com.uplants.app.data.users.UsersRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -91,4 +96,14 @@ class AppContainer(context: Context) {
     val usersRepository by lazy { UsersRepository(service<UsersApi>(ServiceUrls.users)) }
 
     val device by lazy { DeviceServices(appContext) }
+
+    // Notifications (requirement 21): see data/notifications.
+    val activityChecker by lazy {
+        ActivityChecker(appContext, sessions, contentRepository, usersRepository, messagingRepository)
+    }
+    val notifier by lazy { Notifier(appContext) }
+    val notificationScheduler by lazy { NotificationScheduler(appContext) }
+
+    /** Set when the app is opened from a notification; the main screen navigates there and clears it. */
+    val pendingDeepLink = MutableStateFlow<DeepLink?>(null)
 }

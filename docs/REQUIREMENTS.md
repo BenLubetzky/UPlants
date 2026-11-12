@@ -6,7 +6,7 @@ Update this file (and the summary table in the [README](../README.md#status)) wh
 **Status:** ✅ done · 🟡 partial (e.g. server ready, app screen missing) · ❌ not started
 **Deadline:** 15 December 2026 (report + GitHub link + demo video)
 
-Last updated: 2026-11-12 (app: favourite lists and messages)
+Last updated: 2026-11-12 (app: statistics dashboard and notifications)
 
 ## Application requirements
 
@@ -30,9 +30,9 @@ Last updated: 2026-11-12 (app: favourite lists and messages)
 | 16 | Contents characterised by type and/or other metrics | 🟡 | `content_type`, counters on `posts` | [`content-service`](../services/content-service/README.md) ✅ type, category, tags, counters | `ui/post/` type, category, species, tags, location, sensor data, counters |
 | 17 | Sort by date, rating, interactions | 🟡 | indexes on `created_at`, `rating_avg`, `interaction_count` | [`content-service`](../services/content-service/README.md) ✅ `sort=` recent, rating, views, interactions | `ui/feed/` sort: newest, top rated, most viewed, most popular |
 | 18 | Recordings use device hardware (GPS, accelerometer, camera) | 🟡 | `latitude`, `longitude`, `location_name`, `sensor_data`, `media_url` | [`content-service`](../services/content-service/README.md) ✅ stores GPS + `sensor_data`; `live` requires GPS | `ui/publish/` + `data/device/`: camera (system camera app), microphone, GPS with place name, accelerometer / gyroscope / light / pressure snapshot |
-| 19 | History of own contents + statistics dashboard | 🟡 | `posts` by author, `post_views.viewed_at`, `ratings.stars` | `content-service` ✅ `?author=` (history) · [`interactions-service`](../services/interactions-service/README.md) ✅ `GET /stats` (views per day, rating histogram) | — |
+| 19 | History of own contents + statistics dashboard | 🟡 | `posts` by author, `post_views.viewed_at`, `ratings.stars` | `content-service` ✅ `?author=` (history) · [`interactions-service`](../services/interactions-service/README.md) ✅ `GET /stats` (views per day, rating histogram) | `ui/dashboard/` totals, views per day (30 days), rating histogram, post history and per-post statistics |
 | 20 | Social tools: follow, like, rate, messaging | 🟡 | `follows`, `reactions`, `ratings`, `messages` | [`interactions-service`](../services/interactions-service/README.md) ✅ likes, ratings · [`users-service`](../services/users-service/README.md) ✅ follow · [`messaging-service`](../services/messaging-service/README.md) ✅ messages, inbox, unread count | `ui/profile/` follow / unfollow, followers / following · `ui/post/` like, rate, share · `ui/messages/` inbox, chat, unread badge |
-| 21 | Notifications (e.g. new contents) | 🟡 | `notifications`, `device_tokens` | Database triggers ✅ create them (008) · `notifications-service` (planned) to list them + push | — |
+| 21 | Notifications (e.g. new contents) | 🟡 | `notifications`, `device_tokens` | Database triggers ✅ create them (008) · `notifications-service` (planned) to list them + push | `data/notifications/`: WorkManager job every 15 min + on app start detects new messages, followers, posts by people you follow, likes / comments; system notifications open the right screen |
 
 ### Optional
 
@@ -53,7 +53,7 @@ Last updated: 2026-11-12 (app: favourite lists and messages)
 | I4 | Each service runs in its own Docker container(s) | 🟡 | One Dockerfile per service in `services/*/` |
 | I5 | Services integrated with Docker Compose | 🟡 | Root `docker-compose.yml`: `users-service` (8080), `content-service` (8081), `interactions-service` (8082), `favorites-service` (8083), `messaging-service` (8084) |
 | I6 | Services designed for graceful degradation | 🟡 | Every service answers 503 when Supabase is unreachable |
-| I7 | MVVM in each app module | 🟡 | Auth, feed, post detail, publish, profile, search, lists and messages follow it (`ViewModel` + `StateFlow<UiState>` + screen) |
+| I7 | MVVM in each app module | 🟡 | Auth, feed, post detail, publish, profile, search, lists, messages and dashboard follow it (`ViewModel` + `StateFlow<UiState>` + screen) |
 
 ## Deliverables
 

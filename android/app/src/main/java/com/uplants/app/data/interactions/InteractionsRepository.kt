@@ -3,6 +3,7 @@ package com.uplants.app.data.interactions
 import com.uplants.app.data.model.Comment
 import com.uplants.app.data.model.CommentPage
 import com.uplants.app.data.model.MyInteractions
+import com.uplants.app.data.model.PostStats
 import com.uplants.app.data.network.apiCall
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
@@ -41,6 +42,9 @@ interface InteractionsApi {
 
     @POST("api/interactions/posts/{postId}/views")
     suspend fun recordView(@Path("postId") postId: String)
+
+    @GET("api/interactions/posts/{postId}/stats")
+    suspend fun stats(@Path("postId") postId: String): PostStats
 }
 
 @Serializable
@@ -75,4 +79,7 @@ class InteractionsRepository(private val api: InteractionsApi) {
     suspend fun mine(postId: String): Result<MyInteractions> = apiCall { api.mine(postId) }
 
     suspend fun recordView(postId: String): Result<Unit> = apiCall { api.recordView(postId) }
+
+    /** Dashboard numbers for one post: views per day, rating histogram, totals. */
+    suspend fun stats(postId: String): Result<PostStats> = apiCall { api.stats(postId) }
 }

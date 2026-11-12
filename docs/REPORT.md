@@ -315,7 +315,15 @@ Full endpoint references are in each service's README; below is the design summa
   the unread count: an inbox with one conversation per person (unread ones in bold), and a chat that checks for new
   messages every 5 seconds while open, marks them as read, and shows shared posts as cards that open the post.
   Long-press your own message to delete it. "Message" on a profile starts a conversation.
-- **Next**: dashboard, notifications, then the optional offline cache and connectivity handling.
+- **Statistics dashboard**: totals over all of the user's posts, views per day over the last 30 days and the histogram
+  of ratings received (charts drawn with Compose `Canvas`), then the history of published posts; each post opens its own
+  statistics. Totals come from content-service; the charts add up interactions-service `/stats` per post, and if that
+  service is down the totals still show with a short note.
+- **Notifications**: without a notifications-service the app detects what's new itself, comparing the current state with
+  the last one it saw: new messages, new followers, new posts by people you follow (the "new contents" of the brief) and
+  new likes / comments on your posts. A WorkManager job runs every 15 minutes, also with the app closed, plus once each
+  time the app comes to the foreground; system notifications open the matching chat, profile or post when tapped.
+- **Next**: the optional offline cache and connectivity handling.
   favourite lists, messages, dashboard, then the optional offline cache and connectivity handling.
 
 ---

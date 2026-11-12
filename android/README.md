@@ -6,7 +6,8 @@ Built so far: login / sign up / continue as guest, the **feed** (For you + Explo
 **publish** (photo / video / audio / text, picked from the phone or recorded live with GPS and sensor data),
 **profiles** (yours and others': description, counters, posts, follow / unfollow, followers / following, edit profile,
 interests), **search** (posts and people), **favourite lists** (create, rename, public/private, delete, remove posts;
-others' public lists on their profile) and **messages** (inbox with unread badge, chat, shared posts).
+others' public lists on their profile) **messages** (inbox with unread badge, chat, shared posts), a **statistics dashboard** for your posts and
+**notifications**.
 
 Toolchain: Android Studio 2026.2+, AGP 9.4, Gradle 9.8 (via `gradlew`), Kotlin 2.4, compile SDK 37, target SDK 36 (37 would block emulator → PC traffic, see `app/build.gradle.kts`), min SDK 26.
 
@@ -52,7 +53,8 @@ app/src/main/java/com/uplants/app/
 │   ├── favorites/    # favorites-service: lists, "save to list"
 │   ├── messaging/    # messaging-service: inbox, chat, share a post, unread count
 │   ├── users/        # users-service: search, profiles, follows, interests
-│   └── device/       # GPS (LocationReader), sensors (SensorReader), microphone (AudioRecorder), local files
+│   ├── device/       # GPS (LocationReader), sensors (SensorReader), microphone (AudioRecorder), local files
+│   └── notifications/ # ActivityChecker, ActivityCheckWorker (WorkManager), Notifier, deep links
 └── ui/
     ├── UPlantsApp.kt, AppViewModel.kt   # auth screens, or the main app once logged in / guest
     ├── main/         # MainScreen: bottom navigation + NavHost
@@ -65,6 +67,7 @@ app/src/main/java/com/uplants/app/
     ├── search/       # SearchScreen: posts and people
     ├── lists/        # MyListsScreen, ListDetailScreen
     ├── messages/     # InboxScreen, ChatScreen (polls for new messages every 5 s while open)
+    ├── dashboard/    # DashboardScreen, PostStatsScreen, Canvas charts
     ├── account/      # the Profile tab for visitors (log-in prompt)
     ├── common/       # PostCard, UserRow, MediaPlayer, Paginator, avatars, stars, loading/error states, UiText
     └── theme/
@@ -78,6 +81,25 @@ Messages open from the chat icon on the feed (with the unread count); lists from
 
 Visitors can browse everything; actions that need an account (like, rate, comment, save, share, follow) show a
 "Log in to continue" dialog.
+
+## Statistics dashboard
+
+"Statistics" on your profile: totals over all your posts (posts, views, likes, comments, shares, average rating),
+views per day for the last 30 days and the histogram of ratings received (added up from interactions-service
+`GET /posts/{id}/stats` for your 30 newest posts), then your post history; tap a post for its own charts.
+Charts are drawn with Compose `Canvas`, no chart library. If interactions-service is down the totals still show.
+
+## Notifications
+
+There is no notifications-service yet, so the app works out what's new itself (`data/notifications/ActivityChecker`),
+comparing with what it saw last time (kept in DataStore): new messages, new followers, new posts by people you follow,
+and new likes / comments on your posts. A WorkManager job (`ActivityCheckWorker`) runs it every 15 minutes, even with the
+app closed, and once more whenever the app comes to the foreground. The first check after logging in only records
+the current state. Tapping a notification opens the chat, profile or post it's about. Android 13+ asks for permission
+after login. When a notifications-service exists, only `ActivityChecker` needs to change.
+
+Testing tip: the 15-minute job can't be forced early (WorkManager refuses); put the app in the background, cause
+some activity with another account, then bring the app back to the foreground to run a check.
 
 ## Publishing and device hardware
 

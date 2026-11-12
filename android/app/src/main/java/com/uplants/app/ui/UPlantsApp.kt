@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ fun UPlantsApp(viewModel: AppViewModel = viewModel(factory = AppViewModel.Factor
         AuthState.Guest -> MainScreen(username = null, userId = null, onSignOut = viewModel::signOut)
         // key: a different account gets fresh screens (and ViewModels).
         is AuthState.SignedIn -> key(state.session.userId) {
+            LaunchedEffect(Unit) { viewModel.startNotifications() }
             MainScreen(username = state.session.username, userId = state.session.userId, onSignOut = viewModel::signOut)
         }
     }

@@ -259,4 +259,26 @@
     <string name="chat_load_older">Load older messages</string>
     <string name="chat_delete_title">Delete message</string>
     <string name="chat_delete_body">Delete this message for both of you?</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">Statistics</string>
+    <string name="dashboard_empty">Publish your first post to see its statistics here.</string>
+    <string name="dashboard_views">Views</string>
+    <string name="dashboard_likes">Likes</string>
+    <string name="dashboard_dislikes">Dislikes</string>
+    <string name="dashboard_comments">Comments</string>
+    <string name="dashboard_shares">Shares</string>
+    <string name="dashboard_avg_rating">Avg rating (%1$d)</string>
+    <string name="dashboard_views_30_days">Views, last 30 days</string>
+    <string name="dashboard_ratings">Ratings received</string>
+    <string name="dashboard_charts_unavailable">Charts are temporarily unavailable. The totals above are up to date.</string>
+    <string name="dashboard_history">Your posts</string>
+    <string name="dashboard_row_views">👁 %1$s</string>
+    <string name="dashboard_row_likes">👍 %1$s</string>
+    <string name="dashboard_row_comments">💬 %1$s</string>
+    <string name="dashboard_open_post">Open the post</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel">Activity</string>
+    <string name="notification_channel_description">New messages, followers, posts from people you follow and activity on your posts</string>
 </resources>

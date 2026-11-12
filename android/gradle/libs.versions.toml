@@ -14,6 +14,7 @@ okhttp = "4.12.0"
 datastore = "1.2.1"
 coil = "3.6.3"
 media3 = "1.11.1"
+work = "2.12.0"
 junit = "4.13.2"
 
 [libraries]
@@ -39,6 +40,7 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "work" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 

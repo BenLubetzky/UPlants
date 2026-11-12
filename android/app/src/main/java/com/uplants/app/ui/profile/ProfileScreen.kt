@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Interests
@@ -89,6 +90,7 @@ fun ProfileScreen(
     onOpenMyLists: () -> Unit,
     onOpenList: (String) -> Unit,
     onMessage: (userId: String, name: String) -> Unit,
+    onOpenDashboard: () -> Unit,
     onSignOut: () -> Unit,
     onRequestLogin: () -> Unit,
     viewedPostId: String?,
@@ -120,6 +122,7 @@ fun ProfileScreen(
         onOpenMyLists = onOpenMyLists,
         onOpenList = onOpenList,
         onMessage = onMessage,
+        onOpenDashboard = onOpenDashboard,
         onSignOut = onSignOut,
         onRequestLogin = onRequestLogin,
     )
@@ -144,6 +147,7 @@ fun ProfileContent(
     onOpenMyLists: () -> Unit,
     onOpenList: (String) -> Unit,
     onMessage: (userId: String, name: String) -> Unit,
+    onOpenDashboard: () -> Unit,
     onSignOut: () -> Unit,
     onRequestLogin: () -> Unit,
 ) {
@@ -209,6 +213,7 @@ fun ProfileContent(
                             onEdit = { editing = true },
                             onEditInterests = onEditInterests,
                             onOpenMyLists = onOpenMyLists,
+                            onOpenDashboard = onOpenDashboard,
                             onMessage = { if (state.isLoggedIn) onMessage(profile.id, profile.summary.shownName) else showLoginDialog = true },
                             onOpenFollowList = onOpenFollowList,
                         )
@@ -265,6 +270,7 @@ private fun ProfileHeader(
     onEdit: () -> Unit,
     onEditInterests: () -> Unit,
     onOpenMyLists: () -> Unit,
+    onOpenDashboard: () -> Unit,
     onMessage: () -> Unit,
     onOpenFollowList: (userId: String, followers: Boolean) -> Unit,
 ) {
@@ -299,6 +305,10 @@ private fun ProfileHeader(
                 OutlinedButton(onClick = onOpenMyLists) {
                     Icon(Icons.Filled.Bookmarks, null, Modifier.size(18.dp))
                     Text(stringResource(R.string.lists_title), Modifier.padding(start = 6.dp))
+                }
+                OutlinedButton(onClick = onOpenDashboard) {
+                    Icon(Icons.Filled.BarChart, null, Modifier.size(18.dp))
+                    Text(stringResource(R.string.dashboard_title), Modifier.padding(start = 6.dp))
                 }
             }
         } else {

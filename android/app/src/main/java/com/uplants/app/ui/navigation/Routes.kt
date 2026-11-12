@@ -36,6 +36,13 @@ data class ListDetailRoute(val listId: String)
 @Serializable
 object InboxRoute
 
+/** Statistics of your own posts. */
+@Serializable
+object DashboardRoute
+
+@Serializable
+data class PostStatsRoute(val postId: String, val title: String)
+
 /** [name] is only for the title bar, so it shows before anything loads. */
 @Serializable
 data class ChatRoute(val userId: String, val name: String)

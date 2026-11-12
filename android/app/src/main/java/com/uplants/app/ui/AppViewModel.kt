@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.uplants.app.appContainer
 import com.uplants.app.data.auth.AuthRepository
 import com.uplants.app.data.auth.Session
+import com.uplants.app.data.notifications.ActivityChecker
+import com.uplants.app.data.notifications.NotificationScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +26,11 @@ sealed interface AuthState {
 }
 
 /** Decides at the top level whether the user sees the auth screens or the app. */
-class AppViewModel(private val authRepository: AuthRepository) : ViewModel() {
+class AppViewModel(
+    private val authRepository: AuthRepository,
+    private val scheduler: NotificationScheduler,
+    private val activityChecker: ActivityChecker,
+) : ViewModel() {
 
     private val isGuest = MutableStateFlow(false)
 
@@ -44,12 +50,25 @@ class AppViewModel(private val authRepository: AuthRepository) : ViewModel() {
     /** Logs out a registered user, or sends a guest back to the login screen. */
     fun signOut() {
         isGuest.value = false
-        viewModelScope.launch { authRepository.logout() }
+        scheduler.cancel()
+        viewModelScope.launch {
+            activityChecker.reset()
+            authRepository.logout()
+        }
+    }
+
+    /** After login: check for new activity now and every 15 minutes, even with the app closed. */
+    fun startNotifications() {
+        scheduler.schedulePeriodic()
+        scheduler.checkNow()
     }
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { AppViewModel(appContainer.authRepository) }
+            initializer {
+                val container = appContainer
+                AppViewModel(container.authRepository, container.notificationScheduler, container.activityChecker)
+            }
         }
     }
 }

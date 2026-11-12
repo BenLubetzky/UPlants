@@ -90,6 +90,25 @@ data class Comment(
 @Serializable
 data class CommentPage(val comments: List<Comment>, val limit: Int, val offset: Int)
 
+@Serializable
+data class DayCount(val date: String, val count: Int)
+
+/** Dashboard numbers for one post (interactions-service `GET /posts/{id}/stats`). */
+@Serializable
+data class PostStats(
+    @SerialName("post_id") val postId: String,
+    val views: Int = 0,
+    /** Last 30 days (UTC), oldest first, days without views included as 0. */
+    @SerialName("views_by_day") val viewsByDay: List<DayCount> = emptyList(),
+    val comments: Int = 0,
+    val likes: Int = 0,
+    val dislikes: Int = 0,
+    @SerialName("rating_count") val ratingCount: Int = 0,
+    @SerialName("rating_avg") val ratingAvg: Double = 0.0,
+    /** Index = stars (0-5), value = how many ratings gave that many stars. */
+    @SerialName("rating_histogram") val ratingHistogram: List<Int> = List(6) { 0 },
+)
+
 /** What the logged-in user has done on a post: reaction 1 / -1 / null, stars 0-5 / null. */
 @Serializable
 data class MyInteractions(val reaction: Int? = null, val stars: Int? = null)
